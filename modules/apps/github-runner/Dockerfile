@@ -91,3 +91,5 @@ RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
 
 ENV PATH="${HOME}/.local/bin:/home/runner/python-venv/bin:${PATH}" \
     DOCKER_BUILDKIT=1
+
+    #
