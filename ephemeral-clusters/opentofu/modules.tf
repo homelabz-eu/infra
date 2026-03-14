@@ -25,14 +25,14 @@ module "externaldns" {
     "--source=istio-gateway",
     "--source=istio-virtualservice",
     "--registry=noop",
-    "--policy=upsert-only",
+    "--policy=sync",
     "--provider=pihole",
     "--pihole-server=http://192.168.1.3",
     ] : [
     "--pihole-tls-skip-verify",
     "--source=ingress",
     "--registry=noop",
-    "--policy=upsert-only",
+    "--policy=sync",
     "--provider=pihole",
     "--pihole-server=http://192.168.1.3",
   ]
@@ -84,7 +84,7 @@ module "external_secrets" {
   install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
   vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
-  vault_addr  = "https://vault.toolz.fullstack.pw"
+  vault_addr  = "https://vault.toolz.homelabz.eu"
 
   namespace_selector_type = "label"
   namespace_selector_label = {

@@ -12,6 +12,10 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
+    pihole = {
+      source  = "ryanwholey/pihole"
+      version = "~> 0.2"
+    }
   }
   backend "s3" {
     bucket = "terraform"
@@ -44,4 +48,9 @@ provider "github" {
 
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
+}
+
+provider "pihole" {
+  url      = var.pihole_url
+  password = var.pihole_password
 }

@@ -140,7 +140,7 @@ variable "ingress_class_name" {
 variable "ingress_host" {
   description = "Hostname for Redis ingress"
   type        = string
-  default     = "redis.homelabz.eu"
+  default     = "redis.toolz.homelabz.eu"
 }
 
 variable "ingress_tls_enabled" {

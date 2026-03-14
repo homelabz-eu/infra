@@ -120,7 +120,7 @@ variable "use_external_redis" {
 variable "external_redis_host" {
   description = "External Redis host"
   type        = string
-  default     = "redis.homelabz.eu"
+  default     = "redis.toolz.homelabz.eu"
 }
 
 variable "external_redis_port" {

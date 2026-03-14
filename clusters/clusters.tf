@@ -102,18 +102,6 @@ variable "config" {
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
-      redis = {
-        ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"         = "redis.homelabz.eu"
-          "nginx.ingress.kubernetes.io/proxy-body-size"       = "10m"
-          "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
-          "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
-          "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
-          "nginx.ingress.kubernetes.io/service-upstream"      = "true"
-        }
-        ingress_host       = "redis.homelabz.eu"
-        ingress_class_name = "traefik"
-      }
       oracle_backup = {
         enable_s3_backup       = true
         enable_postgres_backup = true
@@ -139,12 +127,18 @@ variable "config" {
           namespace = "toolz"
         }
       ]
-      cluster_autoscaler_chart_version      = "9.54.0"
-      cluster_autoscaler_image_tag          = "v1.34.2"
-      cluster_autoscaler_scale_down_enabled = false
-      cluster_autoscaler_scale_down_delay   = "10m"
-      cluster_autoscaler_unneeded_time      = "10m"
-      cluster_autoscaler_replicas           = 1
+      cluster_autoscaler_chart_version            = "9.54.0"
+      cluster_autoscaler_image_tag                = "v1.33.0"
+      cluster_autoscaler_scale_down_enabled       = false
+      cluster_autoscaler_scale_down_delay         = "10m"
+      cluster_autoscaler_unneeded_time            = "10m"
+      cluster_autoscaler_skip_local_storage       = true
+      cluster_autoscaler_utilization_threshold    = "1.0"
+      cluster_autoscaler_max_graceful_termination = "600"
+      cluster_autoscaler_delay_after_delete       = "15m"
+      cluster_autoscaler_delay_after_failure      = "10m"
+      cluster_autoscaler_max_provision_time       = "15m"
+      cluster_autoscaler_replicas                 = 1
 
       authentik = {
         domain   = "auth.homelabz.eu"

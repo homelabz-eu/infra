@@ -51,7 +51,7 @@ variable "scale_down_unneeded_time" {
 variable "skip_nodes_with_local_storage" {
   description = "Skip nodes with local storage during scale down"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "skip_nodes_with_system_pods" {
@@ -76,6 +76,36 @@ variable "replicas" {
   description = "Number of autoscaler replicas"
   type        = number
   default     = 1
+}
+
+variable "scale_down_utilization_threshold" {
+  description = "Node utilization threshold below which scale down is considered"
+  type        = string
+  default     = "0.5"
+}
+
+variable "max_graceful_termination_sec" {
+  description = "Maximum time to wait for pod termination during scale down"
+  type        = string
+  default     = "600"
+}
+
+variable "scale_down_delay_after_delete" {
+  description = "Delay before scale down after node deletion"
+  type        = string
+  default     = "15m"
+}
+
+variable "scale_down_delay_after_failure" {
+  description = "Delay before scale down after failure"
+  type        = string
+  default     = "10m"
+}
+
+variable "max_node_provision_time" {
+  description = "Maximum time to wait for node provisioning"
+  type        = string
+  default     = "15m"
 }
 
 variable "additional_set_values" {

@@ -167,6 +167,12 @@ resource "kubernetes_deployment" "buildkitd" {
             mount_path = "/var/lib/buildkit"
           }
 
+          volume_mount {
+            name       = "registry-auth"
+            mount_path = "/root/.docker"
+            read_only  = true
+          }
+
           readiness_probe {
             exec {
               command = ["buildctl", "--addr", "tcp://localhost:1234", "debug", "workers"]
@@ -190,6 +196,17 @@ resource "kubernetes_deployment" "buildkitd" {
         volume {
           name = "buildkit-storage"
           empty_dir {}
+        }
+
+        volume {
+          name = "registry-auth"
+          secret {
+            secret_name = "harbor-pull-secret" #pragma: allowlist secret
+            items {
+              key  = ".dockerconfigjson"
+              path = "config.json"
+            }
+          }
         }
       }
     }

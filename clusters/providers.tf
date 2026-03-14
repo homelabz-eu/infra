@@ -20,6 +20,10 @@ terraform {
       source  = "cyrilgdn/postgresql"
       version = ">= 1.20.0"
     }
+    harbor = {
+      source  = "goharbor/harbor"
+      version = "~> 3.11"
+    }
   }
 }
 
@@ -43,6 +47,12 @@ provider "helm" {
 provider "vault" {
   address = try(var.config[terraform.workspace].vault_addr, var.vault_addr)
   token   = var.VAULT_TOKEN
+}
+
+provider "harbor" {
+  url      = "https://registry.toolz.homelabz.eu"
+  username = "admin"
+  password = contains(local.workload, "harbor") ? module.harbor[0].harbor_admin_password : ""
 }
 
 provider "postgresql" {

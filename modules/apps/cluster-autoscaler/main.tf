@@ -55,17 +55,22 @@ module "values" {
   template_files = [{
     path = "${path.module}/templates/values.yaml.tpl"
     vars = {
-      cluster_name                  = var.managed_clusters[0].name
-      cluster_namespace             = var.managed_clusters[0].namespace
-      image_tag                     = var.image_tag
-      scale_down_enabled            = var.scale_down_enabled
-      scale_down_delay_after_add    = var.scale_down_delay_after_add
-      scale_down_unneeded_time      = var.scale_down_unneeded_time
-      skip_nodes_with_local_storage = var.skip_nodes_with_local_storage
-      skip_nodes_with_system_pods   = var.skip_nodes_with_system_pods
-      balance_similar_node_groups   = var.balance_similar_node_groups
-      expander                      = var.expander
-      replicas                      = var.replicas
+      cluster_name                     = var.managed_clusters[0].name
+      cluster_namespace                = var.managed_clusters[0].namespace
+      image_tag                        = var.image_tag
+      scale_down_enabled               = var.scale_down_enabled
+      scale_down_delay_after_add       = var.scale_down_delay_after_add
+      scale_down_unneeded_time         = var.scale_down_unneeded_time
+      skip_nodes_with_local_storage    = var.skip_nodes_with_local_storage
+      skip_nodes_with_system_pods      = var.skip_nodes_with_system_pods
+      balance_similar_node_groups      = var.balance_similar_node_groups
+      expander                         = var.expander
+      scale_down_utilization_threshold = var.scale_down_utilization_threshold
+      max_graceful_termination_sec     = var.max_graceful_termination_sec
+      scale_down_delay_after_delete    = var.scale_down_delay_after_delete
+      scale_down_delay_after_failure   = var.scale_down_delay_after_failure
+      max_node_provision_time          = var.max_node_provision_time
+      replicas                         = var.replicas
     }
   }]
 }

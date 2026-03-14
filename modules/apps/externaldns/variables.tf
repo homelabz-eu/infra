@@ -43,7 +43,7 @@ variable "container_args" {
     "--source=istio-gateway",
     "--source=istio-virtualservice",
     "--registry=noop",
-    "--policy=upsert-only",
+    "--policy=sync",
     "--provider=pihole",
     "--pihole-server=http://192.168.1.3",
   ]

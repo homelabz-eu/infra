@@ -1,0 +1,100 @@
+charts:
+  - name: argo-cd
+    repo: https://argoproj.github.io/argo-helm
+    version: "7.7.12"
+  - name: argo-rollouts
+    repo: https://argoproj.github.io/argo-helm
+    version: "2.38.0"
+  - name: cert-manager
+    repo: https://charts.jetstack.io
+    version: "v1.16.2"
+  - name: external-secrets
+    repo: https://charts.external-secrets.io
+    version: "0.12.1"
+  - name: falco
+    repo: https://falcosecurity.github.io/charts
+    version: "8.0.0"
+  - name: fluent-bit
+    repo: https://fluent.github.io/helm-charts
+    version: "0.48.9"
+  - name: harbor
+    repo: https://helm.goharbor.io
+    version: "1.18.0"
+  - name: local-path-provisioner
+    repo: https://charts.containeroo.ch
+    version: "0.0.30"
+  - name: longhorn
+    repo: https://charts.longhorn.io
+    version: "1.9.0"
+  - name: metallb
+    repo: https://metallb.github.io/metallb
+    version: "0.14.9"
+  - name: metrics-server
+    repo: https://kubernetes-sigs.github.io/metrics-server/
+    version: "3.12.2"
+  - name: minio
+    repo: https://charts.min.io/
+    version: "5.4.0"
+  - name: nats
+    repo: https://nats-io.github.io/k8s/helm/charts/
+    version: "1.2.11"
+  - name: opentelemetry-collector
+    repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+    version: "0.62.0"
+  - name: prometheus
+    repo: https://prometheus-community.github.io/helm-charts
+    version: "27.45.0"
+  - name: redis
+    repo: https://charts.bitnami.com/bitnami
+    version: "17.14.4"
+  - name: teleport-kube-agent
+    repo: https://charts.releases.teleport.dev
+    version: "17.7.1"
+  - name: vault
+    repo: https://helm.releases.hashicorp.com
+    version: "0.29.1"
+  - name: cluster-api-operator
+    repo: https://kubernetes-sigs.github.io/cluster-api-operator
+    version: "0.24.1"
+  - name: cluster-autoscaler
+    repo: https://kubernetes.github.io/autoscaler
+    version: "9.54.0"
+  - name: base
+    repo: https://istio-release.storage.googleapis.com/charts
+    version: "1.28.2"
+  - name: istiod
+    repo: https://istio-release.storage.googleapis.com/charts
+    version: "1.28.2"
+  - name: gateway
+    repo: https://istio-release.storage.googleapis.com/charts
+    version: "1.28.2"
+  - name: nginx-ingress
+    repo: https://helm.nginx.com/stable
+    version: "1.2.0"
+  - name: immich
+    repo: https://immich-app.github.io/immich-charts
+    version: "0.10.3"
+  - name: authentik
+    repo: https://charts.goauthentik.io
+    version: "2024.12.3"
+  - name: cloudnative-pg
+    repo: https://cloudnative-pg.github.io/charts
+    version: "0.27.0"
+  - name: kube-prometheus-stack
+    repo: https://prometheus-community.github.io/helm-charts
+    version: "79.0.1"
+  - name: loki
+    repo: https://grafana.github.io/helm-charts
+    version: "6.28.0"
+  - name: opentelemetry-operator
+    repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+    version: "0.33.0"
+  - name: jaeger-operator
+    repo: https://jaegertracing.github.io/helm-charts
+    version: "2.57.0"
+  - name: gitlab-runner
+    repo: https://charts.gitlab.io
+    version: "0.71.0"
+  - name: gitea
+    repo: https://dl.gitea.com/charts/
+    version: "10.6.0"

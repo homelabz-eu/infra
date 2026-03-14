@@ -314,7 +314,7 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 
 **Platform Services** (toolz cluster):
 - HashiCorp Vault for centralized secrets
-- Harbor container registry
+- Harbor container registry with upstream replication (Docker Hub, GHCR, registry.k8s.io, Quay.io, and more)
 - Teleport agent for secure access
 
 Configuration is workspace-specific via `workload` variable - modules only deploy when listed in workspace's workload array.
@@ -455,7 +455,7 @@ infra/
 │       ├── Security: vault, teleport-agent, authentik, falco
 │       ├── Storage: longhorn, local-path-provisioner
 │       ├── Virtualization: kubevirt, kubevirt-operator
-│       └── Other: harbor, immich, registry, cluster-autoscaler, oracle-backup
+│       └── Other: harbor, harbor-replication, immich, registry, cluster-autoscaler, oracle-backup
 ├── init/
 │   ├── vms/             # YAML VM definitions for declarative provisioning (legacy)
 │   ├── playbooks/       # Ansible configuration playbooks (legacy K3s clusters)
@@ -466,6 +466,9 @@ infra/
 │   └── clusters/        # Cluster registration and repo secrets
 ├── secrets/             # SOPS-encrypted secrets (age encryption)
 │   └── common/cluster-secret-store/secrets/  # Cluster-wide secrets synced via External Secrets
+├── scripts/
+│   ├── helm-mirror.sh   # Mirror Helm charts to Harbor as OCI artifacts
+│   └── helm-charts.yaml # Helm chart inventory for mirroring
 ├── .github/workflows/   # CI/CD automation pipelines
 ├── Makefile             # Development commands (plan, apply, init, fmt, validate)
 └── docs/                # Technical documentation
@@ -530,7 +533,7 @@ infra/
 - GitHub Actions with Actions Runner Controller (ARC)
 - GitLab CI runners
 - Argo Rollouts (Blue-Green deployments with automated E2E testing via Cypress)
-- Harbor (container registry)
+- Harbor (container registry with pull replication from 9 upstream registries + local Helm chart mirror)
 - Custom runner images with kubectl, Helm, OpenTofu, SOPS, buildctl
 
 **Security**

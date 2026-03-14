@@ -17,6 +17,11 @@ extraArgs:
   skip-nodes-with-system-pods: ${skip_nodes_with_system_pods}
   balance-similar-node-groups: ${balance_similar_node_groups}
   expander: ${expander}
+  scale-down-utilization-threshold: ${scale_down_utilization_threshold}
+  max-graceful-termination-sec: ${max_graceful_termination_sec}
+  scale-down-delay-after-delete: ${scale_down_delay_after_delete}
+  scale-down-delay-after-failure: ${scale_down_delay_after_failure}
+  max-node-provision-time: ${max_node_provision_time}
   kubeconfig: /mnt/kubernetes/all-clusters
   clusterapi-cloud-config-authoritative: true
 

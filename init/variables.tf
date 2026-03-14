@@ -14,8 +14,10 @@ variable "github_org" {
 variable "repositories" {
   description = "GitHub repositories to manage"
   type = map(object({
-    description = string
-    visibility  = optional(string, "public")
+    description     = string
+    visibility      = optional(string, "public")
+    has_pages       = optional(bool, false)
+    pages_subdomain = optional(string, null)
   }))
   default = {
     infra = {
@@ -32,6 +34,14 @@ variable "repositories" {
     }
     cks-terminal-mgmt = {
       description = "Terminal management microservice"
+    }
+    cypress = {
+      description = "End-to-end tests"
+    }
+    cv-k9s = {
+      description     = "k9s-style interactive CV"
+      has_pages       = true
+      pages_subdomain = "cv"
     }
   }
 }
@@ -111,6 +121,40 @@ variable "cloud_init_credentials" {
     password = string
   })
   sensitive = true
+}
+
+variable "vm_dns_records" {
+  description = "DNS records for VMs running outside Kubernetes"
+  type = map(object({
+    ip     = string
+    domain = string
+  }))
+  default = {
+    teleport = {
+      ip     = "192.168.1.18"
+      domain = "teleport"
+    }
+    postgres = {
+      ip     = "192.168.1.100"
+      domain = "postgres"
+    }
+    harbor = {
+      ip     = "192.168.1.101"
+      domain = "registry"
+    }
+  }
+}
+
+variable "pihole_url" {
+  description = "PiHole server URL"
+  type        = string
+  default     = "http://192.168.1.3"
+}
+
+variable "pihole_password" {
+  description = "PiHole admin password"
+  type        = string
+  sensitive   = true
 }
 
 variable "proxmox_isos" {
