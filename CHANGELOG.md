@@ -1,3 +1,10 @@
+## [0.0.2](https://github.com/homelabz-eu/infra/compare/v0.0.1...v0.0.2) (2026-03-14)
+
+### Tasks
+
+* **refactor:** move to new harbor ([eddb937](https://github.com/homelabz-eu/infra/commit/eddb9371dcb79ee4cb6c516e227404fbc891c528))
+* **trigger:** build ([32e568f](https://github.com/homelabz-eu/infra/commit/32e568f8539f23517f3e28fabff0810c60509214))
+
 ## [1.11.6](https://github.com/fullstack-pw/infra/compare/v1.11.5...v1.11.6) (2026-02-06)
 
 ### Bug Fixes
