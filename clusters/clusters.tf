@@ -22,7 +22,8 @@ variable "workload" {
       # "gitea",
       # "gitea_runner",
       "github_runner",
-      "harbor",
+      #"harbor",
+      "harbor_replication",
       "minio",
       "vault",
       "argocd",
@@ -416,7 +417,7 @@ variable "config" {
         default_actions_url = "https://git.homelabz.eu"
       }
       github_runner = {
-        registry_server = "registry.toolz.homelabz.eu"
+        registry_server = "registry.homelabz.eu"
       }
       vault_ingress_host       = "vault.toolz.homelabz.eu"
       argocd_ingress_class     = "nginx"

@@ -27,9 +27,9 @@ SKIPPED=0
 SUCCESS=0
 
 for i in $(seq 0 $((CHART_COUNT - 1))); do
-  NAME=$(yq ".charts[$i].name" "$CHARTS_FILE")
-  REPO=$(yq ".charts[$i].repo" "$CHARTS_FILE")
-  VERSION=$(yq ".charts[$i].version" "$CHARTS_FILE")
+  NAME=$(yq -r ".charts[$i].name" "$CHARTS_FILE")
+  REPO=$(yq -r ".charts[$i].repo" "$CHARTS_FILE")
+  VERSION=$(yq -r ".charts[$i].version" "$CHARTS_FILE")
 
   echo "[$((i + 1))/$CHART_COUNT] $NAME:$VERSION"
 

@@ -50,9 +50,9 @@ provider "vault" {
 }
 
 provider "harbor" {
-  url      = "https://registry.toolz.homelabz.eu"
+  url      = "https://registry.homelabz.eu"
   username = "admin"
-  password = contains(local.workload, "harbor") ? module.harbor[0].harbor_admin_password : ""
+  password = local.secrets_json["kv/cluster-secret-store/secrets/HARBOR_KEY"]["HARBOR_KEY"]
 }
 
 provider "postgresql" {

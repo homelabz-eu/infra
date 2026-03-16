@@ -126,8 +126,8 @@ module "github_runner" {
   install_crd             = var.config[terraform.workspace].crds_installed
   enable_buildkit_runners = true
   registry_server         = try(var.config[terraform.workspace].github_runner.registry_server, "")
-  registry_username       = try(data.kubernetes_secret.harbor_credentials[0].data["admin_username"], "")
-  registry_password       = try(data.kubernetes_secret.harbor_credentials[0].data["admin_password"], "")
+  registry_username       = "admin"
+  registry_password       = local.secrets_json["kv/cluster-secret-store/secrets/HARBOR_KEY"]["HARBOR_KEY"]
 }
 
 module "gitlab_runner" {
@@ -352,27 +352,8 @@ module "nats" {
 
 }
 
-module "harbor" {
-  count  = contains(local.workload, "harbor") ? 1 : 0
-  source = "../modules/apps/harbor"
-
-  external_database_host     = "postgres.homelabz.eu"
-  external_database_username = "postgres"
-  external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
-  external_redis_host        = data.kubernetes_secret.redis_credentials[0].data["redis_host"]
-  external_redis_password    = data.kubernetes_secret.redis_credentials[0].data["redis_password"]
-  harbor_domain              = var.config[terraform.workspace].harbor.harbor_domain
-  ingress_class_name         = var.config[terraform.workspace].harbor.ingress_class_name
-  ingress_annotations        = var.config[terraform.workspace].harbor.ingress_annotations
-  ingress_enabled            = true
-  admin_password             = local.secrets_json["kv/cluster-secret-store/secrets/HARBOR_KEY"]["HARBOR_KEY"]
-  generate_admin_password    = false
-  registry_existing_claim    = try(var.config[terraform.workspace].harbor.registry_existing_claim, "")
-  registry_storage_size      = try(var.config[terraform.workspace].harbor.registry_storage_size, "5Gi")
-}
-
 module "harbor_replication" {
-  count  = contains(local.workload, "harbor") ? 1 : 0
+  count  = contains(local.workload, "harbor_replication") ? 1 : 0
   source = "../modules/apps/harbor-replication"
 
   registries = {
@@ -425,158 +406,151 @@ module "harbor_replication" {
 
   images = {
     # docker.io
-    alpine                           = { registry_key = "dockerhub", name = "library/alpine" }
-    busybox                          = { registry_key = "dockerhub", name = "library/busybox" }
-    nats                             = { registry_key = "dockerhub", name = "library/nats" }
-    docker-dind                      = { registry_key = "dockerhub", name = "library/docker" }
-    ubuntu                           = { registry_key = "dockerhub", name = "library/ubuntu" }
-    bitnami-kubectl                  = { registry_key = "dockerhub", name = "bitnami/kubectl" }
-    bitnami-os-shell                 = { registry_key = "dockerhub", name = "bitnami/os-shell" }
-    bitnami-postgresql               = { registry_key = "dockerhub", name = "bitnami/postgresql" }
-    bitnami-redis                    = { registry_key = "dockerhub", name = "bitnami/redis" }
-    calico-cni                       = { registry_key = "dockerhub", name = "calico/cni" }
-    calico-kube-controllers          = { registry_key = "dockerhub", name = "calico/kube-controllers" }
-    calico-node                      = { registry_key = "dockerhub", name = "calico/node" }
-    curlimages-curl                  = { registry_key = "dockerhub", name = "curlimages/curl" }
-    falco                            = { registry_key = "dockerhub", name = "falcosecurity/falco" }
-    falcoctl                         = { registry_key = "dockerhub", name = "falcosecurity/falcoctl" }
-    harbor-core                      = { registry_key = "dockerhub", name = "goharbor/harbor-core" }
-    harbor-jobservice                = { registry_key = "dockerhub", name = "goharbor/harbor-jobservice" }
-    harbor-portal                    = { registry_key = "dockerhub", name = "goharbor/harbor-portal" }
-    harbor-registryctl               = { registry_key = "dockerhub", name = "goharbor/harbor-registryctl" }
-    registry-photon                  = { registry_key = "dockerhub", name = "goharbor/registry-photon" }
-    trivy-adapter-photon             = { registry_key = "dockerhub", name = "goharbor/trivy-adapter-photon" }
-    vault                            = { registry_key = "dockerhub", name = "hashicorp/vault" }
-    vault-k8s                        = { registry_key = "dockerhub", name = "hashicorp/vault-k8s" }
-    istio-pilot                      = { registry_key = "dockerhub", name = "istio/pilot" }
-    istio-proxyv2                    = { registry_key = "dockerhub", name = "istio/proxyv2" }
-    buildkit                         = { registry_key = "dockerhub", name = "moby/buildkit" }
-    natsio-nats-box                  = { registry_key = "dockerhub", name = "natsio/nats-box" }
-    nats-config-reloader             = { registry_key = "dockerhub", name = "natsio/nats-server-config-reloader" }
-    otel-collector-contrib           = { registry_key = "dockerhub", name = "otel/opentelemetry-collector-contrib" }
-    nicolaka-netshoot                = { registry_key = "dockerhub", name = "nicolaka/netshoot" }
-    minio-mc                         = { registry_key = "dockerhub", name = "minio/mc" }
-    pgvecto-rs                       = { registry_key = "dockerhub", name = "tensorchord/pgvecto-rs" }
-    rancher-local-path-provisioner   = { registry_key = "dockerhub", name = "rancher/local-path-provisioner" }
-    rancher-klipper-helm             = { registry_key = "dockerhub", name = "rancher/klipper-helm" }
-    rancher-klipper-lb               = { registry_key = "dockerhub", name = "rancher/klipper-lb" }
-    rancher-mirrored-coredns         = { registry_key = "dockerhub", name = "rancher/mirrored-coredns-coredns" }
-    rancher-mirrored-busybox         = { registry_key = "dockerhub", name = "rancher/mirrored-library-busybox" }
-    rancher-mirrored-traefik         = { registry_key = "dockerhub", name = "rancher/mirrored-library-traefik" }
-    rancher-mirrored-metrics-server  = { registry_key = "dockerhub", name = "rancher/mirrored-metrics-server" }
-    rancher-mirrored-pause           = { registry_key = "dockerhub", name = "rancher/mirrored-pause" }
-    rancher-mirrored-calico-cni      = { registry_key = "dockerhub", name = "rancher/mirrored-calico-cni" }
-    rancher-mirrored-calico-ctrl     = { registry_key = "dockerhub", name = "rancher/mirrored-calico-kube-controllers" }
-    rancher-mirrored-calico-node     = { registry_key = "dockerhub", name = "rancher/mirrored-calico-node" }
-    rancher-mirrored-calico-operator = { registry_key = "dockerhub", name = "rancher/mirrored-calico-operator" }
-    rancher-mirrored-calico-flexvol  = { registry_key = "dockerhub", name = "rancher/mirrored-calico-pod2daemon-flexvol" }
-    rancher-mirrored-calico-typha    = { registry_key = "dockerhub", name = "rancher/mirrored-calico-typha" }
-    rancher-hardened-etcd            = { registry_key = "dockerhub", name = "rancher/hardened-etcd" }
-    rancher-hardened-kubernetes      = { registry_key = "dockerhub", name = "rancher/hardened-kubernetes" }
-    rancher-hardened-coredns         = { registry_key = "dockerhub", name = "rancher/hardened-coredns" }
-    rancher-hardened-metrics-server  = { registry_key = "dockerhub", name = "rancher/hardened-k8s-metrics-server" }
-    rancher-hardened-autoscaler      = { registry_key = "dockerhub", name = "rancher/hardened-cluster-autoscaler" }
-    rancher-rke2-cloud-provider      = { registry_key = "dockerhub", name = "rancher/rke2-cloud-provider" }
-    rancher-nginx-ingress-controller = { registry_key = "dockerhub", name = "rancher/nginx-ingress-controller" }
-    rancher-mirrored-snapshot-ctrl   = { registry_key = "dockerhub", name = "rancher/mirrored-sig-storage-snapshot-controller" }
-    longhornio-engine                = { registry_key = "dockerhub", name = "longhornio/longhorn-engine" }
-    longhornio-manager               = { registry_key = "dockerhub", name = "longhornio/longhorn-manager" }
-    longhornio-instance-manager      = { registry_key = "dockerhub", name = "longhornio/longhorn-instance-manager" }
-    longhornio-share-manager         = { registry_key = "dockerhub", name = "longhornio/longhorn-share-manager" }
-    longhornio-ui                    = { registry_key = "dockerhub", name = "longhornio/longhorn-ui" }
-    longhornio-csi-attacher          = { registry_key = "dockerhub", name = "longhornio/csi-attacher" }
-    longhornio-csi-node-registrar    = { registry_key = "dockerhub", name = "longhornio/csi-node-driver-registrar" }
-    longhornio-csi-provisioner       = { registry_key = "dockerhub", name = "longhornio/csi-provisioner" }
-    longhornio-csi-resizer           = { registry_key = "dockerhub", name = "longhornio/csi-resizer" }
-    longhornio-csi-snapshotter       = { registry_key = "dockerhub", name = "longhornio/csi-snapshotter" }
-    longhornio-livenessprobe         = { registry_key = "dockerhub", name = "longhornio/livenessprobe" }
+    alpine-3-19                       = { registry_key = "dockerhub", name = "library/alpine", tag = "3.19" }
+    alpine-3-20                       = { registry_key = "dockerhub", name = "library/alpine", tag = "3.20" }
+    alpine-3-21                       = { registry_key = "dockerhub", name = "library/alpine", tag = "3.21" }
+    busybox-1-36                      = { registry_key = "dockerhub", name = "library/busybox", tag = "1.36" }
+    nats                              = { registry_key = "dockerhub", name = "library/nats", tag = "2.10.26-alpine" }
+    calico-cni                        = { registry_key = "dockerhub", name = "calico/cni", tag = "v3.29.1" }
+    calico-kube-controllers           = { registry_key = "dockerhub", name = "calico/kube-controllers", tag = "v3.29.1" }
+    calico-node                       = { registry_key = "dockerhub", name = "calico/node", tag = "v3.29.1" }
+    falco                             = { registry_key = "dockerhub", name = "falcosecurity/falco", tag = "0.43.0" }
+    falcoctl                          = { registry_key = "dockerhub", name = "falcosecurity/falcoctl", tag = "0.12.2" }
+    goharbor-harbor-core              = { registry_key = "dockerhub", name = "goharbor/harbor-core", tag = "v2.14.0" }
+    goharbor-harbor-db                = { registry_key = "dockerhub", name = "goharbor/harbor-db", tag = "v2.14.0" }
+    goharbor-harbor-jobservice        = { registry_key = "dockerhub", name = "goharbor/harbor-jobservice", tag = "v2.14.0" }
+    goharbor-harbor-log               = { registry_key = "dockerhub", name = "goharbor/harbor-log", tag = "v2.14.0" }
+    goharbor-harbor-portal            = { registry_key = "dockerhub", name = "goharbor/harbor-portal", tag = "v2.14.0" }
+    goharbor-harbor-registryctl       = { registry_key = "dockerhub", name = "goharbor/harbor-registryctl", tag = "v2.14.0" }
+    goharbor-nginx-photon             = { registry_key = "dockerhub", name = "goharbor/nginx-photon", tag = "v2.14.0" }
+    goharbor-redis-photon             = { registry_key = "dockerhub", name = "goharbor/redis-photon", tag = "v2.14.0" }
+    goharbor-registry-photon          = { registry_key = "dockerhub", name = "goharbor/registry-photon", tag = "v2.14.0" }
+    goharbor-trivy-adapter-photon     = { registry_key = "dockerhub", name = "goharbor/trivy-adapter-photon", tag = "v2.14.0" }
+    vault                             = { registry_key = "dockerhub", name = "hashicorp/vault", tag = "1.18.1" }
+    vault-k8s                         = { registry_key = "dockerhub", name = "hashicorp/vault-k8s", tag = "1.5.0" }
+    istio-pilot                       = { registry_key = "dockerhub", name = "istio/pilot", tag = "1.28.2" }
+    istio-proxyv2                     = { registry_key = "dockerhub", name = "istio/proxyv2", tag = "1.28.2" }
+    buildkit                          = { registry_key = "dockerhub", name = "moby/buildkit", tag = "latest" }
+    natsio-nats-box                   = { registry_key = "dockerhub", name = "natsio/nats-box", tag = "0.16.0" }
+    nats-config-reloader              = { registry_key = "dockerhub", name = "natsio/nats-server-config-reloader", tag = "0.16.1" }
+    otel-collector-contrib            = { registry_key = "dockerhub", name = "otel/opentelemetry-collector-contrib", tag = "0.81.0" }
+    rancher-local-path-provisioner-28 = { registry_key = "dockerhub", name = "rancher/local-path-provisioner", tag = "v0.0.28" }
+    rancher-local-path-provisioner-31 = { registry_key = "dockerhub", name = "rancher/local-path-provisioner", tag = "v0.0.31" }
+    rancher-klipper-helm-v094         = { registry_key = "dockerhub", name = "rancher/klipper-helm", tag = "v0.9.4-build20250113" }
+    rancher-klipper-helm-v095         = { registry_key = "dockerhub", name = "rancher/klipper-helm", tag = "v0.9.5-build20250306" }
+    rancher-klipper-lb                = { registry_key = "dockerhub", name = "rancher/klipper-lb", tag = "v0.4.13" }
+    rancher-mirrored-coredns-1-12-0   = { registry_key = "dockerhub", name = "rancher/mirrored-coredns-coredns", tag = "1.12.0" }
+    rancher-mirrored-coredns-1-12-3   = { registry_key = "dockerhub", name = "rancher/mirrored-coredns-coredns", tag = "1.12.3" }
+    rancher-mirrored-traefik-332      = { registry_key = "dockerhub", name = "rancher/mirrored-library-traefik", tag = "3.3.2" }
+    rancher-mirrored-traefik-336      = { registry_key = "dockerhub", name = "rancher/mirrored-library-traefik", tag = "3.3.6" }
+    rancher-mirrored-metrics-072      = { registry_key = "dockerhub", name = "rancher/mirrored-metrics-server", tag = "v0.7.2" }
+    rancher-mirrored-metrics-080      = { registry_key = "dockerhub", name = "rancher/mirrored-metrics-server", tag = "v0.8.0" }
+    rancher-mirrored-pause            = { registry_key = "dockerhub", name = "rancher/mirrored-pause", tag = "3.6" }
+    rancher-mirrored-calico-cni       = { registry_key = "dockerhub", name = "rancher/mirrored-calico-cni", tag = "v3.30.0" }
+    rancher-mirrored-calico-ctrl      = { registry_key = "dockerhub", name = "rancher/mirrored-calico-kube-controllers", tag = "v3.30.0" }
+    rancher-mirrored-calico-node      = { registry_key = "dockerhub", name = "rancher/mirrored-calico-node", tag = "v3.30.0" }
+    rancher-mirrored-calico-operator  = { registry_key = "dockerhub", name = "rancher/mirrored-calico-operator", tag = "v1.38.0" }
+    rancher-mirrored-calico-flexvol   = { registry_key = "dockerhub", name = "rancher/mirrored-calico-pod2daemon-flexvol", tag = "v3.30.0" }
+    rancher-mirrored-calico-typha     = { registry_key = "dockerhub", name = "rancher/mirrored-calico-typha", tag = "v3.30.0" }
+    rancher-hardened-etcd             = { registry_key = "dockerhub", name = "rancher/hardened-etcd", tag = "v3.5.21-k3s1-build20250411" }
+    rancher-hardened-kubernetes       = { registry_key = "dockerhub", name = "rancher/hardened-kubernetes", tag = "v1.33.1-rke2r1-build20250515" }
+    rancher-hardened-coredns          = { registry_key = "dockerhub", name = "rancher/hardened-coredns", tag = "v1.12.1-build20250507" }
+    rancher-hardened-metrics-server   = { registry_key = "dockerhub", name = "rancher/hardened-k8s-metrics-server", tag = "v0.7.2-build20250507" }
+    rancher-hardened-autoscaler       = { registry_key = "dockerhub", name = "rancher/hardened-cluster-autoscaler", tag = "v1.10.2-build20250507" }
+    rancher-rke2-cloud-provider       = { registry_key = "dockerhub", name = "rancher/rke2-cloud-provider", tag = "v1.33.0-rc1.0.20250430074337-dc03cb4b3faa-build20250430" }
+    rancher-nginx-ingress-controller  = { registry_key = "dockerhub", name = "rancher/nginx-ingress-controller", tag = "v1.12.1-hardened6" }
+    rancher-mirrored-snapshot-ctrl    = { registry_key = "dockerhub", name = "rancher/mirrored-sig-storage-snapshot-controller", tag = "v8.2.0" }
+    longhornio-engine                 = { registry_key = "dockerhub", name = "longhornio/longhorn-engine", tag = "v1.9.0" }
+    longhornio-manager                = { registry_key = "dockerhub", name = "longhornio/longhorn-manager", tag = "v1.9.0" }
+    longhornio-instance-manager       = { registry_key = "dockerhub", name = "longhornio/longhorn-instance-manager", tag = "v1.9.0" }
+    longhornio-share-manager          = { registry_key = "dockerhub", name = "longhornio/longhorn-share-manager", tag = "v1.9.0" }
+    longhornio-ui                     = { registry_key = "dockerhub", name = "longhornio/longhorn-ui", tag = "v1.9.0" }
+    longhornio-csi-attacher           = { registry_key = "dockerhub", name = "longhornio/csi-attacher", tag = "v4.8.1" }
+    longhornio-csi-node-registrar     = { registry_key = "dockerhub", name = "longhornio/csi-node-driver-registrar", tag = "v2.13.0" }
+    longhornio-csi-provisioner        = { registry_key = "dockerhub", name = "longhornio/csi-provisioner", tag = "v5.2.0" }
+    longhornio-csi-resizer            = { registry_key = "dockerhub", name = "longhornio/csi-resizer", tag = "v1.13.2" }
+    longhornio-csi-snapshotter        = { registry_key = "dockerhub", name = "longhornio/csi-snapshotter", tag = "v8.2.0" }
+    longhornio-livenessprobe          = { registry_key = "dockerhub", name = "longhornio/livenessprobe", tag = "v2.15.0" }
 
     # ghcr.io
-    actions-runner            = { registry_key = "ghcr", name = "actions/actions-runner" }
-    gha-controller            = { registry_key = "ghcr", name = "actions/gha-runner-scale-set-controller" }
-    cloudnative-pg            = { registry_key = "ghcr", name = "cloudnative-pg/cloudnative-pg" }
-    cloudnative-pg-postgresql = { registry_key = "ghcr", name = "cloudnative-pg/postgresql" }
-    goauthentik-server        = { registry_key = "ghcr", name = "goauthentik/server" }
-    immich-server             = { registry_key = "ghcr", name = "immich-app/immich-server" }
-    immich-ml                 = { registry_key = "ghcr", name = "immich-app/immich-machine-learning" }
-    capmox                    = { registry_key = "ghcr", name = "ionos-cloud/cluster-api-provider-proxmox" }
-    capi-k3s-bootstrap        = { registry_key = "ghcr", name = "k3s-io/cluster-api-k3s/bootstrap-controller" }
-    capi-k3s-controlplane     = { registry_key = "ghcr", name = "k3s-io/cluster-api-k3s/controlplane-controller" }
-    kube-vip                  = { registry_key = "ghcr", name = "kube-vip/kube-vip" }
-    capi-rke2-bootstrap       = { registry_key = "ghcr", name = "rancher/cluster-api-provider-rke2-bootstrap" }
-    capi-rke2-controlplane    = { registry_key = "ghcr", name = "rancher/cluster-api-provider-rke2-controlplane" }
-    capi-talos-cp-controller  = { registry_key = "ghcr", name = "siderolabs/cluster-api-control-plane-talos-controller" }
-    capi-talos-controller     = { registry_key = "ghcr", name = "siderolabs/cluster-api-talos-controller" }
-    siderolabs-flannel        = { registry_key = "ghcr", name = "siderolabs/flannel" }
-    talos-ccm                 = { registry_key = "ghcr", name = "siderolabs/talos-cloud-controller-manager" }
-    kubelet-cert-approver     = { registry_key = "ghcr", name = "alex1989hu/kubelet-serving-cert-approver" }
+    gha-controller           = { registry_key = "ghcr", name = "actions/gha-runner-scale-set-controller", tag = "0.13.0" }
+    immich-server            = { registry_key = "ghcr", name = "immich-app/immich-server", tag = "v2.0.0" }
+    immich-ml                = { registry_key = "ghcr", name = "immich-app/immich-machine-learning", tag = "v2.0.0" }
+    capmox                   = { registry_key = "ghcr", name = "ionos-cloud/cluster-api-provider-proxmox", tag = "v0.7.5" }
+    capi-k3s-bootstrap       = { registry_key = "ghcr", name = "k3s-io/cluster-api-k3s/bootstrap-controller", tag = "v0.3.0" }
+    capi-k3s-controlplane    = { registry_key = "ghcr", name = "k3s-io/cluster-api-k3s/controlplane-controller", tag = "v0.3.0" }
+    kube-vip-v089            = { registry_key = "ghcr", name = "kube-vip/kube-vip", tag = "v0.8.9" }
+    kube-vip-v102            = { registry_key = "ghcr", name = "kube-vip/kube-vip", tag = "v1.0.2" }
+    capi-rke2-bootstrap      = { registry_key = "ghcr", name = "rancher/cluster-api-provider-rke2-bootstrap", tag = "v0.21.1" }
+    capi-rke2-controlplane   = { registry_key = "ghcr", name = "rancher/cluster-api-provider-rke2-controlplane", tag = "v0.21.1" }
+    capi-talos-cp-controller = { registry_key = "ghcr", name = "siderolabs/cluster-api-control-plane-talos-controller", tag = "v0.5.11" }
+    capi-talos-controller    = { registry_key = "ghcr", name = "siderolabs/cluster-api-talos-controller", tag = "v0.6.10" }
+    siderolabs-flannel       = { registry_key = "ghcr", name = "siderolabs/flannel", tag = "v0.26.7" }
+    talos-ccm                = { registry_key = "ghcr", name = "siderolabs/talos-cloud-controller-manager", tag = "v1.11.0" }
+    kubelet-cert-approver    = { registry_key = "ghcr", name = "alex1989hu/kubelet-serving-cert-approver", tag = "main" }
 
     # registry.k8s.io
-    k8s-coredns                 = { registry_key = "k8s", name = "coredns/coredns" }
-    k8s-etcd                    = { registry_key = "k8s", name = "etcd" }
-    k8s-kube-apiserver          = { registry_key = "k8s", name = "kube-apiserver" }
-    k8s-kube-controller-manager = { registry_key = "k8s", name = "kube-controller-manager" }
-    k8s-kube-proxy              = { registry_key = "k8s", name = "kube-proxy" }
-    k8s-kube-scheduler          = { registry_key = "k8s", name = "kube-scheduler" }
-    k8s-pause                   = { registry_key = "k8s", name = "pause" }
-    k8s-external-dns            = { registry_key = "k8s", name = "external-dns/external-dns" }
-    k8s-kube-state-metrics      = { registry_key = "k8s", name = "kube-state-metrics/kube-state-metrics" }
-    k8s-metrics-server          = { registry_key = "k8s", name = "metrics-server/metrics-server" }
-    k8s-cluster-autoscaler      = { registry_key = "k8s", name = "autoscaling/cluster-autoscaler" }
-    k8s-capi-operator           = { registry_key = "k8s", name = "capi-operator/cluster-api-operator" }
-    k8s-capi-controller         = { registry_key = "k8s", name = "cluster-api/cluster-api-controller" }
-    k8s-capi-kubeadm-bootstrap  = { registry_key = "k8s", name = "cluster-api/kubeadm-bootstrap-controller" }
-    k8s-capi-kubeadm-cp         = { registry_key = "k8s", name = "cluster-api/kubeadm-control-plane-controller" }
-    k8s-capi-ipam               = { registry_key = "k8s", name = "capi-ipam-ic/cluster-api-ipam-in-cluster-controller" }
-    k8s-snapshot-controller     = { registry_key = "k8s", name = "sig-storage/snapshot-controller" }
+    k8s-coredns-v1113          = { registry_key = "k8s", name = "coredns/coredns", tag = "v1.11.3" }
+    k8s-coredns-v1121          = { registry_key = "k8s", name = "coredns/coredns", tag = "v1.12.1" }
+    k8s-etcd                   = { registry_key = "k8s", name = "etcd", tag = "3.5.15-0" }
+    k8s-kube-apiserver-v1314   = { registry_key = "k8s", name = "kube-apiserver", tag = "v1.31.4" }
+    k8s-kube-apiserver-v1330   = { registry_key = "k8s", name = "kube-apiserver", tag = "v1.33.0" }
+    k8s-kube-cm-v1314          = { registry_key = "k8s", name = "kube-controller-manager", tag = "v1.31.4" }
+    k8s-kube-cm-v1330          = { registry_key = "k8s", name = "kube-controller-manager", tag = "v1.33.0" }
+    k8s-kube-proxy-v1314       = { registry_key = "k8s", name = "kube-proxy", tag = "v1.31.4" }
+    k8s-kube-proxy-v1330       = { registry_key = "k8s", name = "kube-proxy", tag = "v1.33.0" }
+    k8s-kube-scheduler-v1314   = { registry_key = "k8s", name = "kube-scheduler", tag = "v1.31.4" }
+    k8s-kube-scheduler-v1330   = { registry_key = "k8s", name = "kube-scheduler", tag = "v1.33.0" }
+    k8s-external-dns           = { registry_key = "k8s", name = "external-dns/external-dns", tag = "v0.14.1" }
+    k8s-kube-state-metrics     = { registry_key = "k8s", name = "kube-state-metrics/kube-state-metrics", tag = "v2.17.0" }
+    k8s-metrics-server         = { registry_key = "k8s", name = "metrics-server/metrics-server", tag = "v0.7.2" }
+    k8s-cluster-autoscaler     = { registry_key = "k8s", name = "autoscaling/cluster-autoscaler", tag = "v1.33.0" }
+    k8s-capi-operator          = { registry_key = "k8s", name = "capi-operator/cluster-api-operator", tag = "v0.24.1" }
+    k8s-capi-controller        = { registry_key = "k8s", name = "cluster-api/cluster-api-controller", tag = "v1.12.0" }
+    k8s-capi-kubeadm-bootstrap = { registry_key = "k8s", name = "cluster-api/kubeadm-bootstrap-controller", tag = "v1.12.0-rc.0" }
+    k8s-capi-kubeadm-cp        = { registry_key = "k8s", name = "cluster-api/kubeadm-control-plane-controller", tag = "v1.12.0-rc.0" }
+    k8s-capi-ipam              = { registry_key = "k8s", name = "capi-ipam-ic/cluster-api-ipam-in-cluster-controller", tag = "v1.0.3" }
+    k8s-snapshot-controller    = { registry_key = "k8s", name = "sig-storage/snapshot-controller", tag = "v8.0.1" }
 
     # quay.io
-    argocd                       = { registry_key = "quay", name = "argoproj/argocd" }
-    argo-rollouts                = { registry_key = "quay", name = "argoproj/argo-rollouts" }
-    kubectl-argo-rollouts        = { registry_key = "quay", name = "argoproj/kubectl-argo-rollouts" }
-    cert-manager-cainjector      = { registry_key = "quay", name = "jetstack/cert-manager-cainjector" }
-    cert-manager-controller      = { registry_key = "quay", name = "jetstack/cert-manager-controller" }
-    cert-manager-webhook         = { registry_key = "quay", name = "jetstack/cert-manager-webhook" }
-    cert-manager-startupapicheck = { registry_key = "quay", name = "jetstack/cert-manager-startupapicheck" }
-    metallb-controller           = { registry_key = "quay", name = "metallb/controller" }
-    metallb-speaker              = { registry_key = "quay", name = "metallb/speaker" }
-    prometheus                   = { registry_key = "quay", name = "prometheus/prometheus" }
-    node-exporter                = { registry_key = "quay", name = "prometheus/node-exporter" }
-    prometheus-config-reloader   = { registry_key = "quay", name = "prometheus-operator/prometheus-config-reloader" }
-    minio                        = { registry_key = "quay", name = "minio/minio" }
-    minio-mc-quay                = { registry_key = "quay", name = "minio/mc" }
-    frr                          = { registry_key = "quay", name = "frrouting/frr" }
-    kubevirt-virt-operator       = { registry_key = "quay", name = "kubevirt/virt-operator" }
-    kubevirt-virt-api            = { registry_key = "quay", name = "kubevirt/virt-api" }
-    kubevirt-virt-controller     = { registry_key = "quay", name = "kubevirt/virt-controller" }
-    kubevirt-virt-handler        = { registry_key = "quay", name = "kubevirt/virt-handler" }
-    kubevirt-virt-launcher       = { registry_key = "quay", name = "kubevirt/virt-launcher" }
-    kubevirt-virt-exportproxy    = { registry_key = "quay", name = "kubevirt/virt-exportproxy" }
-    kubevirt-cdi-operator        = { registry_key = "quay", name = "kubevirt/cdi-operator" }
-    kubevirt-cdi-controller      = { registry_key = "quay", name = "kubevirt/cdi-controller" }
-    kubevirt-cdi-apiserver       = { registry_key = "quay", name = "kubevirt/cdi-apiserver" }
-    kubevirt-cdi-uploadproxy     = { registry_key = "quay", name = "kubevirt/cdi-uploadproxy" }
-    k0smotron                    = { registry_key = "quay", name = "k0sproject/k0smotron" }
-    k0s                          = { registry_key = "quay", name = "k0sproject/k0s" }
+    argocd                     = { registry_key = "quay", name = "argoproj/argocd", tag = "v2.13.2" }
+    argo-rollouts              = { registry_key = "quay", name = "argoproj/argo-rollouts", tag = "v1.7.2" }
+    kubectl-argo-rollouts      = { registry_key = "quay", name = "argoproj/kubectl-argo-rollouts", tag = "v1.7.2" }
+    cert-manager-cainjector    = { registry_key = "quay", name = "jetstack/cert-manager-cainjector", tag = "v1.16.2" }
+    cert-manager-controller    = { registry_key = "quay", name = "jetstack/cert-manager-controller", tag = "v1.16.2" }
+    cert-manager-webhook       = { registry_key = "quay", name = "jetstack/cert-manager-webhook", tag = "v1.16.2" }
+    metallb-controller         = { registry_key = "quay", name = "metallb/controller", tag = "v0.14.9" }
+    metallb-speaker            = { registry_key = "quay", name = "metallb/speaker", tag = "v0.14.9" }
+    prometheus                 = { registry_key = "quay", name = "prometheus/prometheus", tag = "v3.7.3" }
+    node-exporter              = { registry_key = "quay", name = "prometheus/node-exporter", tag = "v1.10.2" }
+    prometheus-config-reloader = { registry_key = "quay", name = "prometheus-operator/prometheus-config-reloader", tag = "v0.86.2" }
+    minio                      = { registry_key = "quay", name = "minio/minio", tag = "RELEASE.2024-12-18T13-15-44Z" }
+    frr                        = { registry_key = "quay", name = "frrouting/frr", tag = "9.1.0" }
+    kubevirt-virt-operator     = { registry_key = "quay", name = "kubevirt/virt-operator", tag = "v1.5.1" }
+    kubevirt-virt-api          = { registry_key = "quay", name = "kubevirt/virt-api", tag = "v1.5.1" }
+    kubevirt-virt-controller   = { registry_key = "quay", name = "kubevirt/virt-controller", tag = "v1.5.1" }
+    kubevirt-virt-handler      = { registry_key = "quay", name = "kubevirt/virt-handler", tag = "v1.5.1" }
+    kubevirt-virt-launcher     = { registry_key = "quay", name = "kubevirt/virt-launcher", tag = "v1.5.1" }
+    kubevirt-virt-exportproxy  = { registry_key = "quay", name = "kubevirt/virt-exportproxy", tag = "v1.5.1" }
+    kubevirt-cdi-operator      = { registry_key = "quay", name = "kubevirt/cdi-operator", tag = "v1.62.0" }
+    kubevirt-cdi-controller    = { registry_key = "quay", name = "kubevirt/cdi-controller", tag = "v1.62.0" }
+    kubevirt-cdi-apiserver     = { registry_key = "quay", name = "kubevirt/cdi-apiserver", tag = "v1.62.0" }
+    kubevirt-cdi-uploadproxy   = { registry_key = "quay", name = "kubevirt/cdi-uploadproxy", tag = "v1.62.0" }
 
     # cr.fluentbit.io
-    fluent-bit = { registry_key = "fluentbit", name = "fluent/fluent-bit" }
+    fluent-bit = { registry_key = "fluentbit", name = "fluent/fluent-bit", tag = "3.2.8" }
 
     # gcr.io
-    kube-rbac-proxy = { registry_key = "gcr", name = "kubebuilder/kube-rbac-proxy" }
+    kube-rbac-proxy = { registry_key = "gcr", name = "kubebuilder/kube-rbac-proxy", tag = "v0.16.0" }
 
     # public.ecr.aws
-    ecr-redis           = { registry_key = "ecr-public", name = "docker/library/redis" }
-    teleport-distroless = { registry_key = "ecr-public", name = "gravitational/teleport-distroless" }
+    ecr-redis           = { registry_key = "ecr-public", name = "docker/library/redis", tag = "7.4.1-alpine" }
+    teleport-distroless = { registry_key = "ecr-public", name = "gravitational/teleport-distroless", tag = "17.7.1" }
 
     # oci.external-secrets.io
-    external-secrets = { registry_key = "external-secrets", name = "external-secrets/external-secrets" }
-
-    # registry.gitlab.com
-    gitlab-runner = { registry_key = "gitlab", name = "gitlab-org/gitlab-runner" }
+    external-secrets = { registry_key = "external-secrets", name = "external-secrets/external-secrets", tag = "v0.12.1" }
   }
 
-  depends_on = [module.harbor]
 }
 
 module "immich" {
@@ -666,24 +640,7 @@ module "kubernetes_clusters" {
   ]
 }
 
-data "kubernetes_secret" "redis_credentials" {
-  count = contains(local.workload, "harbor") ? 1 : 0
 
-  metadata {
-    name      = "redis-credentials"
-    namespace = "default"
-  }
-}
-
-
-data "kubernetes_secret" "harbor_credentials" {
-  count = contains(local.workload, "github_runner") ? 1 : 0
-
-  metadata {
-    name      = "harbor-credentials"
-    namespace = "harbor"
-  }
-}
 
 data "vault_kv_secret_v2" "postgres_ca" {
   for_each = local.postgres_ca_secrets

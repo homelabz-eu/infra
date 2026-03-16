@@ -43,7 +43,7 @@ variable "runner_name" {
 variable "runner_image" {
   description = "Docker image for GitHub runner"
   type        = string
-  default     = "registry.toolz.homelabz.eu/library/github-runner:latest"
+  default     = "registry.homelabz.eu/library/github-runner:latest"
 }
 
 variable "registry_server" {
