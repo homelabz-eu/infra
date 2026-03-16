@@ -45,19 +45,6 @@ variable "workload" {
       "observability-box",
       "immich"
     ]
-    dev = [
-      "local-path-provisioner",
-      "metrics-server",
-      "metallb",
-      "externaldns",
-      "cert_manager",
-      "external_secrets",
-      "istio",
-      "argocd",
-      "teleport-agent",
-      "observability-box",
-      #"freqtrade"
-    ]
     prod = [
       "local-path-provisioner",
       "metrics-server",
@@ -146,35 +133,6 @@ variable "config" {
         redis_db = 1
       }
       kubernetes-cluster = [
-        {
-          cluster_type              = "talos"
-          name                      = "dev"
-          kubernetes_version        = "v1.33.0"
-          control_plane_endpoint_ip = "192.168.1.50"
-          ip_range_start            = "192.168.1.51"
-          ip_range_end              = "192.168.1.56"
-          gateway                   = "192.168.1.1"
-          prefix                    = 24
-          dns_servers               = ["192.168.1.3", "8.8.4.4"]
-
-          source_node   = "node03"
-          template_id   = 9005
-          allowed_nodes = ["node03"]
-
-          cp_replicas = 1
-          wk_replicas = 2
-
-          cp_disk_size = 20
-          cp_memory    = 4096
-          cp_cores     = 4
-          wk_disk_size = 30
-          wk_memory    = 8192
-          wk_cores     = 8
-
-          autoscaler_enabled = true
-          autoscaler_min     = 2
-          autoscaler_max     = 4
-        },
         {
           cluster_type              = "kubeadm"
           name                      = "prod"
@@ -491,32 +449,6 @@ variable "config" {
     home = {
       kubernetes_context = "home"
       crds_installed     = true
-    }
-    dev = {
-      kubernetes_context     = "dev"
-      crds_installed         = true
-      istio_CRDs             = true
-      argocd_ingress_class   = "istio"
-      argocd_ingress_enabled = false
-      argocd_domain          = "dev.argocd.homelabz.eu"
-      gateway_dns_names = [
-        "dev.api.cks.homelabz.eu",
-        "dev.cks.homelabz.eu",
-        "dev.argocd.homelabz.eu",
-      ]
-      teleport = {
-        apps = {
-          "dev-cks" = "http://cks-frontend.default.svc.cluster.local:3000"
-        }
-        databases = {}
-        roles     = "kube,app"
-      }
-      prometheus_namespaces     = []
-      prometheus_memory_limit   = "1024Mi"
-      prometheus_memory_request = "256Mi"
-      prometheus_storage_size   = "2Gi"
-      metallb_create_ip_pool    = true
-      metallb_ip_pool_addresses = ["192.168.1.60-192.168.1.69"]
     }
     prod = {
       kubernetes_context     = "prod"

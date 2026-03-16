@@ -81,14 +81,12 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 Blue-Green deployment strategy with automated E2E testing and production promotion:
 
-1. **Build Phase**: GitHub Actions ([build.yml](.github/workflows/build.yml)) builds and pushes container image to Harbor registry (`registry.toolz.homelabz.eu`)
-2. **Dev Deployment**: Pipeline updates dev kustomization with new image tag, ArgoCD syncs to dev cluster
-3. **E2E Testing**: Argo Rollouts triggers prePromotionAnalysis running Cypress tests against dev environment
-4. **Auto-Promotion**: On test success, postPromotionAnalysis job automatically promotes to prod by updating prod kustomization
-5. **Prod Deployment**: ArgoCD syncs prod overlay, Argo Rollouts performs Blue-Green switch
+1. **Build Phase**: GitHub Actions builds and pushes container image to Harbor registry (`registry.toolz.homelabz.eu`)
+2. **E2E Testing**: Ephemeral clusters spun up per PR for isolated testing
+3. **Prod Deployment**: Pipeline updates prod kustomization with new image tag, ArgoCD syncs to prod cluster
 
 ```
-Build → Push Image → Update Dev Tag → ArgoCD Sync → Cypress Tests → Update Prod Tag → ArgoCD Sync → Live
+Build → Push Image → Ephemeral Cluster Tests (PR) → Merge → Update Prod Tag → ArgoCD Sync → Live
 ```
 
 **ArgoCD ApplicationSet Pattern**:
@@ -110,7 +108,7 @@ generators:
               matchExpressions:
                 - key: environment
                   operator: In
-                  values: [dev, prod]
+                  values: [prod]
 ```
 
 **Bootstrap Architecture**:
@@ -129,7 +127,7 @@ Key components:
 - Per-app AnalysisTemplates for Cypress test execution (e.g., `cypress-tests-cks-backend`)
 - Per-app AnalysisTemplates for production promotion via git commit automation (e.g., `promote-cks-backend-to-prod`)
 - `autoPromotionEnabled: true` for fully automated pipeline
-- Prod overlay removes prePromotionAnalysis (tests only run in dev)
+- E2E testing runs on ephemeral clusters during PR phase
 - Kustomize overlays for environment-specific configuration
 
 **Self-Hosted Runner Infrastructure**
@@ -193,9 +191,9 @@ Edge collectors on all workload clusters:
 - **Management Cluster**: clustermgmt (K3s on NODE02)
 - **Cluster API Operator**: v1.12.0 with CAPMOX v0.7.5 (Proxmox provider)
 - **Supported Distributions**:
-  - **Talos Linux**: Immutable infrastructure with declarative configuration (dev cluster)
   - **kubeadm**: Standard Kubernetes with HA support (prod cluster)
-  - **K3s, K0s, RKE2**: Additional distributions supported
+  - **RKE2**: Enterprise-grade Kubernetes (toolz cluster)
+  - **Talos Linux, K3s, K0s**: Additional distributions supported (used for ephemeral clusters)
 - **Polymorphic Module**: [modules/apps/kubernetes-cluster](modules/apps/kubernetes-cluster/) supports all cluster types
 
 **Key Script**: [clusters/scripts/update_kubeconfig_sops.sh](clusters/scripts/update_kubeconfig_sops.sh) handles kubeconfig extraction, merging, SOPS encryption, and git commits.
@@ -285,12 +283,12 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 - Metrics Server for resource metrics
 
 **Ingress & Service Mesh**:
-- MetalLB for LoadBalancer service type (dev, prod)
-- Istio service mesh with mTLS (dev, prod)
+- MetalLB for LoadBalancer service type (prod, toolz)
+- Istio service mesh with mTLS (prod)
 - Ingress-NGINX (alternative ingress controller)
 
 **GitOps & CI/CD**:
-- ArgoCD for GitOps application delivery (dev, prod, toolz)
+- ArgoCD for GitOps application delivery (prod, toolz)
 - GitHub Actions Runner Controller (toolz)
 - GitLab CI runners (toolz)
 
@@ -299,7 +297,7 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 - Full observability stack (Prometheus, Grafana, Jaeger, Loki) on observability cluster
 
 **Storage**:
-- Local Path Provisioner for dynamic local storage (dev, prod)
+- Local Path Provisioner for dynamic local storage (prod, toolz)
 - Longhorn distributed storage (toolz for snapshot capability)
 
 **Data Services** (toolz cluster):
@@ -333,7 +331,7 @@ Configuration is workspace-specific via `workload` variable - modules only deplo
 ### High Availability
 
 **Multi-Cluster Architecture**
-- 6 environment-isolated Kubernetes clusters (dev, prod, clustermgmt, toolz, home, observability)
+- 5 environment-isolated Kubernetes clusters (prod, clustermgmt, toolz, home, observability) + ephemeral clusters per PR
 - Production workloads distributed across multiple replicas via Kustomize overlays
 - HAProxy load balancer for vanilla Kubernetes traffic distribution
 - MetalLB for LoadBalancer service type support on bare metal
@@ -378,13 +376,12 @@ Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secret
 - Istio Gateway integration for TLS termination
 - Certificate validation monitoring
 - Environment-specific gateway DNS names configured via OpenTofu variables:
-  - Dev: `dev.app.homelabz.eu` pattern
-  - Prod: `app.homelabz.eu` pattern (no prefix)
+  - Prod: `app.homelabz.eu` pattern
 
 ### Network Security
 
 **Service Mesh Implementation**
-- Istio deployed on dev cluster for traffic encryption and observability
+- Istio deployed on prod cluster for traffic encryption and observability
 - Mutual TLS (mTLS) capability between services
 - VirtualServices for fine-grained routing control
 - Gateway resources for ingress traffic management
@@ -489,8 +486,8 @@ infra/
 |---------|------|--------------|---------|---------|---------------|
 | clustermgmt | K3s | Legacy Ansible | Cluster API management cluster (management plane only) | k8s-tools (single node, NODE02) | Cluster API operator, Cluster Autoscaler |
 | toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 2 workers (NODE03) | CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
-| dev | Talos | Cluster API | Development environment | 1 CP + 2 workers | Development services, Istio service mesh, ArgoCD |
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
+| ephemeral | Talos | Cluster API | Per-PR environments | Dynamic | Created/destroyed per pull request |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
 
@@ -632,7 +629,7 @@ clustermgmt = {
 ```hcl
 variable "workload" {
   default = {
-    dev = ["existing-module", "new-module"]
+    prod = ["existing-module", "new-module"]
   }
 }
 ```
@@ -640,7 +637,7 @@ variable "workload" {
 ```hcl
 variable "config" {
   default = {
-    dev = {
+    prod = {
       new-module = {
         # module-specific settings
       }
@@ -655,7 +652,7 @@ module "new_module" {
   source = "../modules/apps/new-module"
 }
 ```
-4. Run `make plan ENV=dev` to preview, then `make apply ENV=dev` to deploy
+4. Run `make plan ENV=prod` to preview, then `make apply ENV=prod` to deploy
 
 ### What is the CKS platform?
 

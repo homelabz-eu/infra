@@ -22,7 +22,7 @@ spec:
                 matchExpressions:
                   - key: environment
                     operator: In
-                    values: [dev, prod]
+                    values: [prod]
   template:
     metadata:
       name: "{{.app}}-{{.name}}"

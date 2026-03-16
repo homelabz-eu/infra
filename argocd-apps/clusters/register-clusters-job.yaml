@@ -61,37 +61,6 @@ spec:
               echo "Extracting kubeconfig from cluster-secrets..."
               kubectl get secret cluster-secrets -n argocd -o jsonpath='{.data.KUBECONFIG}' | base64 -d > /tmp/kubeconfig
 
-              # Extract dev cluster credentials
-              echo "Extracting dev cluster credentials..."
-              export DEV_CA=$(cat /tmp/kubeconfig | grep -A 1 "name: dev" -m 1 | grep certificate-authority-data | awk '{print $2}')
-              export DEV_CERT=$(cat /tmp/kubeconfig | grep -A 2 "name: dev" | grep client-certificate-data | awk '{print $2}')
-              export DEV_KEY=$(cat /tmp/kubeconfig | grep -A 3 "name: dev" | grep client-key-data | awk '{print $2}')
-
-              # Create dev cluster secret
-              echo "Creating dev cluster secret..."
-              cat <<EOF | kubectl apply -f -
-              apiVersion: v1
-              kind: Secret
-              metadata:
-                name: dev-cluster
-                namespace: argocd
-                labels:
-                  argocd.argoproj.io/secret-type: cluster
-                  environment: dev
-              type: Opaque
-              stringData:
-                name: dev
-                server: https://192.168.1.50:6443
-                config: |
-                  {
-                    "tlsClientConfig": {
-                      "insecure": true,
-                      "certData": "$DEV_CERT",
-                      "keyData": "$DEV_KEY"
-                    }
-                  }
-              EOF
-
               # Extract prod cluster credentials
               echo "Extracting prod cluster credentials..."
               export PROD_CA=$(cat /tmp/kubeconfig | grep -A 1 "name: prod" -m 1 | grep certificate-authority-data | awk '{print $2}')
