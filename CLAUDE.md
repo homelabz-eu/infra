@@ -222,7 +222,8 @@ make workspace  # List workspaces
 
 - 3 Proxmox nodes: NODE01 (16GB), NODE02 (32GB), NODE03 (128GB)
 - Management cluster: `clustermgmt` K3s on NODE02 — runs Cluster API only (context: `clustermgmt`, OpenTofu workspace: `clustermgmt`)
-- Workloads cluster: `toolz` RKE2 on NODE03 — vault, harbor, argocd, postgres, runners, etc. (context: `toolz`, OpenTofu workspace: `toolz`)
+- Workloads cluster: `toolz` RKE2 on NODE03 — vault, harbor, argocd, gitlab-runner, nats, etc. (context: `toolz`, OpenTofu workspace: `toolz`)
+- VM services: GitLab CE (192.168.1.102), MinIO (192.168.1.103), PostgreSQL+Redis (192.168.1.100)
 - Legacy K3s: home, observability (Ansible-managed)
 - Cluster API managed: prod (kubeadm), toolz (RKE2)
 - Network: 192.168.1.0/24 (private, not internet-exposed)
@@ -232,13 +233,12 @@ make workspace  # List workspaces
 **Public Repository Context:**
 - Repository is PUBLIC for portfolio showcase
 - Homelab is PRIVATE (192.168.x.x not internet-routable)
-- Externally-usable credentials (SSH keys, GitHub PAT, Cloudflare token) are protected
-- Workflow logs are public but contain only internal details
+- Externally-usable credentials (SSH keys, Cloudflare token) are protected
+- GitHub workflow logs are public but contain only internal details
 
 **Best Practices Demonstrated:**
 - SOPS encryption for all secrets
-- GitHub Secrets for CI/CD credentials
-- Self-hosted runners (controlled environment)
+- GitLab CI/CD with self-hosted runners on K8s (controlled environment)
 - No debug logging of sensitive values
 - Clean git history (no committed secrets)
 

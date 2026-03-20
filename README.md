@@ -128,10 +128,8 @@ Key components:
 
 **Self-Hosted Runner Infrastructure**
 - GitLab CI runners on toolz cluster as primary CI/CD execution platform
-- Actions Runner Controller (ARC) on toolz cluster for GitHub Actions (transition period)
-- Two GitHub runner scale sets: `self-hosted` (general-purpose) and `self-hosted-buildkit` (container builds via BuildKit)
-- Dedicated BuildKit daemon (single privileged pod) serving all build runners over TCP
-- Custom runner image with kubectl, Helm, OpenTofu, SOPS, buildctl, and cloud provider tools
+- Docker-in-Docker (DinD) for container builds
+- Custom runner image with kubectl, Helm, OpenTofu, SOPS, and cloud provider tools
 - Centralized reusable CI templates in [pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines) repository
 
 **Key Data Flows**:
@@ -284,7 +282,6 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 
 **GitOps & CI/CD**:
 - ArgoCD for GitOps application delivery (prod, toolz)
-- GitHub Actions Runner Controller (toolz)
 - GitLab CI runners (toolz)
 
 **Observability**:
@@ -297,7 +294,6 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 
 **Data Services** (toolz cluster):
 - CloudNativePG for PostgreSQL
-- Redis for caching
 - NATS for messaging
 
 **VM-Based Services** (standalone VMs):
@@ -484,7 +480,7 @@ infra/
 | Cluster | Type | Provisioning | Purpose | Node(s) | Key Workloads |
 |---------|------|--------------|---------|---------|---------------|
 | clustermgmt | K3s | Legacy Ansible | Cluster API management cluster (management plane only) | k8s-tools (single node, NODE02) | Cluster API operator, Cluster Autoscaler |
-| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 2 workers (NODE03) | CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
+| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 4 workers (NODE03) | CloudNativePG, NATS, GitLab CI runners, Vault, Harbor, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
 | ephemeral | Talos | Cluster API | Per-PR environments | Dynamic | Created/destroyed per pull request |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
@@ -521,14 +517,13 @@ infra/
 
 **Data Services**
 - CloudNativePG operator (PostgreSQL 15+ with pgvector, automated backups, managed roles/databases)
-- Redis (Bitnami)
 - NATS with JetStream (messaging)
-- MinIO (S3-compatible object storage, VM-based)
+- PostgreSQL + Redis VM (`postgres.homelabz.eu` / `redis.homelabz.eu`, 192.168.1.100)
+- MinIO (S3-compatible object storage, `s3.homelabz.eu`, 192.168.1.103)
 
 **CI/CD**
 - Self-hosted GitLab CE (`gitlab.homelabz.eu`) as primary Git and CI/CD platform
 - GitLab CI runners on K8s (toolz cluster)
-- GitHub Actions with ARC (transition period)
 - Argo Rollouts (Blue-Green deployments with automated E2E testing via Cypress)
 - Harbor (container registry with pull replication from 9 upstream registries + local Helm chart mirror)
 - Custom runner images with kubectl, Helm, OpenTofu, SOPS, buildctl

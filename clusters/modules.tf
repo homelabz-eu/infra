@@ -499,7 +499,7 @@ module "immich" {
   count  = contains(local.workload, "immich") ? 1 : 0
   source = "../modules/apps/immich"
 
-  redis         = "redis.toolz.homelabz.eu"
+  redis         = "redis.homelabz.eu"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   db_hostname   = "192.168.1.100"
   db_user       = "postgres"
@@ -770,12 +770,10 @@ module "authentik" {
   postgres_user        = "postgres"
   postgres_secret_name = "postgres-superuser"
 
-  redis_host     = "redis-master.default.svc.cluster.local"
+  redis_host     = "redis.homelabz.eu"
   redis_password = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   redis_db       = var.config[terraform.workspace].authentik.redis_db
 
   authentik_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_SECRET_KEY"]
   admin_password       = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_ADMIN_PASSWORD"]
-
-  depends_on = [module.redis]
 }
