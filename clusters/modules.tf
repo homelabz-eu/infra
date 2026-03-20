@@ -185,6 +185,7 @@ module "argocd" {
   enable_notifications   = true
   enable_dex             = false
   istio_CRDs             = var.config[terraform.workspace].istio_CRDs
+  gitlab_token           = try(local.secrets_json["kv/cluster-secret-store/secrets/GITLAB_TOKEN"]["GITLAB_TOKEN"], "")
 }
 
 module "oracle_backup" {

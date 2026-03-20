@@ -32,6 +32,8 @@ module "argocd_values" {
       controller_memory_request = var.controller_resources.requests.memory
       controller_cpu_limit      = var.controller_resources.limits.cpu
       controller_memory_limit   = var.controller_resources.limits.memory
+      gitlab_url                = var.gitlab_url
+      gitlab_token              = var.gitlab_token
     }
   }]
 }
@@ -103,7 +105,7 @@ resource "kubernetes_manifest" "argocd_bootstrap" {
     spec = {
       project = "default"
       source = {
-        repoURL        = "https://github.com/homelabz-eu/infra.git"
+        repoURL        = var.git_repo_url
         targetRevision = "HEAD"
         path           = "argocd-apps"
         directory = {

@@ -6,6 +6,17 @@ configs:
     server.insecure: true
     application.namespaces: "${application_namespaces}"
 
+  credentialTemplates:
+    gitlab:
+      url: ${gitlab_url}
+      password: ${gitlab_token}
+      username: root
+
+  repositories:
+    infra:
+      url: ${gitlab_url}/homelabz-eu/infra.git
+      type: git
+
   cm:
     url: https://${domain}
     statusbadge.enabled: "true"

@@ -16,6 +16,25 @@ variable "install_bootstrap" {
   default     = false
 }
 
+variable "git_repo_url" {
+  description = "Git repository URL for ArgoCD bootstrap app"
+  type        = string
+  default     = "https://gitlab.homelabz.eu/homelabz-eu/infra.git"
+}
+
+variable "gitlab_url" {
+  description = "GitLab instance URL for ArgoCD credential template"
+  type        = string
+  default     = "https://gitlab.homelabz.eu"
+}
+
+variable "gitlab_token" {
+  description = "GitLab token for ArgoCD repository access"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "argocd_version" {
   description = "Argo CD Helm chart version"
   type        = string
