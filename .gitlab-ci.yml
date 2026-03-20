@@ -2,77 +2,182 @@ stages:
   - validate
   - plan
   - apply
+  - post-apply
 
 variables:
   TF_IN_AUTOMATION: "true"
   TF_VAR_VAULT_TOKEN: ${VAULT_TOKEN}
 
-# Base job definition to be extended by other jobs
-.terraform:
-  image: hashicorp/terraform:1.10.5
+.opentofu:
   tags:
     - k8s-gitlab-runner
   before_script:
-    # Install SOPS and age
-    - apk add --no-cache wget bash curl python3 py3-pip gnupg
-    - wget -O /tmp/sops.rpm https://github.com/mozilla/sops/releases/download/v3.8.1/sops-3.8.1-1.x86_64.rpm
-    - rpm -i /tmp/sops.rpm || apk add --no-cache rpm && rpm -i /tmp/sops.rpm
-    - wget -O /tmp/age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz
-    - tar -xzf /tmp/age.tar.gz -C /tmp
-    - mv /tmp/age/age /usr/local/bin/
-    - mv /tmp/age/age-keygen /usr/local/bin/
-    - chmod +x /usr/local/bin/age /usr/local/bin/age-keygen
-    # Setup age key from GitLab CI variable
     - mkdir -p ~/.sops/keys
     - echo "$SOPS_AGE_KEY" > ~/.sops/keys/sops-key.txt
     - chmod 600 ~/.sops/keys/sops-key.txt
     - export SOPS_AGE_KEY_FILE=~/.sops/keys/sops-key.txt
-    # Process secrets for Terraform
-    - mkdir -p bootstrap/tmp
-    - cd bootstrap
-    - pip install -r requirements.txt
-    - python3 load_secrets.py --environment ${CI_ENVIRONMENT_NAME:-dev}
-    - cd ..
-    # Terraform initialization
-    - cd terraform
-    - terraform init
+    - make init
 
 validate:
-  extends: .terraform
+  extends: .opentofu
   stage: validate
   script:
-    - terraform validate
-  except:
-    - main
-    - tags
+    - make fmt
+    - make validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - clusters/**
+        - secrets/**
 
 plan:
-  extends: .terraform
+  extends: .opentofu
   stage: plan
   script:
-    - terraform plan -out=plan.tfplan
+    - make plan
   artifacts:
     paths:
-      - terraform/plan.tfplan
+      - clusters/plan.txt
     expire_in: 1 week
-  except:
-    - main
-    - tags
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - clusters/**
+        - secrets/**
+
+plan:comment:
+  stage: plan
+  tags:
+    - k8s-gitlab-runner
+  needs:
+    - job: plan
+      artifacts: true
+  script:
+    - |
+      PLAN_OUTPUT=$(cat clusters/plan.txt | head -c 65000)
+      BODY="## OpenTofu Plan\n\`\`\`hcl\n${PLAN_OUTPUT}\n\`\`\`"
+      curl --request POST \
+        --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes" \
+        --data-urlencode "body=${BODY}"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - clusters/**
+        - secrets/**
 
 apply:
-  extends: .terraform
+  extends: .opentofu
   stage: apply
   script:
-    - terraform apply -auto-approve plan.tfplan
-  dependencies:
-    - plan
-  when: manual
-  environment:
-    name: ${CI_ENVIRONMENT_NAME:-prod}
-  only:
-    - main
-    - tags
-  after_script:
-    # Cleanup sensitive data
-    - rm -f ~/.sops/keys/sops-key.txt
-    - rm -rf bootstrap/tmp/*
+    - |
+      cd clusters
+      mkdir -p /tmp/tofu-outputs
+      for workspace in sandboxy tools observability; do
+        tofu workspace select $workspace
+        if tofu output -json proxmox_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
+          tofu output -json proxmox_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_before.json
+        else
+          echo "[]" > /tmp/tofu-outputs/${workspace}_clusters_before.json
+        fi
+      done
+      cd ..
+    - make apply
+    - |
+      cd clusters
+      for workspace in sandboxy tools observability; do
+        tofu workspace select $workspace
+        if tofu output -json proxmox_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
+          tofu output -json proxmox_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_after.json
+        else
+          echo "[]" > /tmp/tofu-outputs/${workspace}_clusters_after.json
+        fi
+      done
+    - |
+      CHANGES_DETECTED=false
+      for workspace in sandboxy tools observability; do
+        BEFORE=$(cat /tmp/tofu-outputs/${workspace}_clusters_before.json)
+        AFTER=$(cat /tmp/tofu-outputs/${workspace}_clusters_after.json)
+        if [ "$BEFORE" != "$AFTER" ]; then
+          echo "Changes detected in workspace: $workspace"
+          CHANGES_DETECTED=true
+        fi
+      done
+      echo "CHANGES_DETECTED=$CHANGES_DETECTED" >> apply.env
+  artifacts:
+    reports:
+      dotenv: apply.env
+    paths:
+      - /tmp/tofu-outputs/
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - clusters/**
+        - secrets/**
+
+update-kubeconfigs:
+  extends: .opentofu
+  stage: post-apply
+  needs:
+    - job: apply
+      artifacts: true
+  script:
+    - |
+      ALL_NEW_CLUSTERS=""
+      for workspace in sandboxy tools observability; do
+        BEFORE=$(cat /tmp/tofu-outputs/${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
+        AFTER=$(cat /tmp/tofu-outputs/${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
+        for cluster in $AFTER; do
+          if ! echo "$BEFORE" | grep -q "^${cluster}$"; then
+            echo "New cluster detected: $cluster"
+            ALL_NEW_CLUSTERS="$ALL_NEW_CLUSTERS $cluster"
+          fi
+        done
+      done
+    - |
+      for cluster in $ALL_NEW_CLUSTERS; do
+        echo "Waiting for cluster $cluster..."
+        TIMEOUT=1800; ELAPSED=0; INTERVAL=10
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(kubectl --context clustermgmt get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
+          if [ "$STATUS" = "True" ]; then
+            echo "Cluster $cluster is Available"
+            break
+          fi
+          sleep $INTERVAL
+          ELAPSED=$((ELAPSED + INTERVAL))
+        done
+        if [ $ELAPSED -ge $TIMEOUT ]; then
+          echo "ERROR: Timeout waiting for cluster $cluster"
+          exit 1
+        fi
+      done
+    - |
+      CHANGES_MADE=false
+      for workspace in sandboxy tools observability; do
+        BEFORE=$(cat /tmp/tofu-outputs/${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
+        AFTER=$(cat /tmp/tofu-outputs/${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
+        for cluster in $AFTER; do
+          ./clusters/scripts/update_kubeconfig_sops.sh "$cluster" "$cluster" "$workspace" upsert && CHANGES_MADE=true
+        done
+        for cluster in $BEFORE; do
+          if ! echo "$AFTER" | grep -q "^${cluster}$"; then
+            ./clusters/scripts/update_kubeconfig_sops.sh "$cluster" "$cluster" "$workspace" delete && CHANGES_MADE=true
+          fi
+        done
+      done
+    - |
+      if [ "$CHANGES_MADE" = "true" ] && ! git diff --quiet secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml; then
+        git config user.email "gitlab-ci@homelabz.eu"
+        git config user.name "GitLab CI"
+        git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
+        git commit -m "chore: Update KUBECONFIG with Cluster API clusters"
+        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:main
+        make apply ENV=toolz TARGET='module.vault[0]'
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CHANGES_DETECTED == "true"'
+      changes:
+        - clusters/**
+        - secrets/**
