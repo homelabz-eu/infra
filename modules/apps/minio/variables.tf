@@ -119,7 +119,7 @@ variable "ingress_annotations" {
   description = "Annotations for the MinIO API ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.homelabz.eu"
+    "external-dns.alpha.kubernetes.io/hostname"   = "s3.homelabz.eu"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"
@@ -135,7 +135,7 @@ variable "ingress_class_name" {
 variable "ingress_host" {
   description = "Hostname for MinIO API ingress"
   type        = string
-  default     = "s3.toolz.homelabz.eu"
+  default     = "s3.homelabz.eu"
 }
 
 variable "ingress_tls_enabled" {

@@ -1,0 +1,171 @@
+---
+- name: GitLab CE
+  hosts: "{{ target_hosts | default('gitlab') }}"
+  become: true
+  gather_facts: yes
+  vars:
+    gitlab_domain: "gitlab.homelabz.eu"
+    gitlab_data_dir: "/data/gitlab"
+    gitlab_install_dir: "/opt/gitlab"
+    gitlab_cert_dir: "/opt/gitlab/certs"
+    gitlab_ssh_port: 2222
+    postgres_host: "postgres.homelabz.eu"
+    redis_host: "redis.homelabz.eu"
+    minio_host: "s3.homelabz.eu"
+    minio_endpoint: "https://s3.homelabz.eu"
+    vault_addr: "https://vault.toolz.homelabz.eu"
+
+  handlers:
+    - name: restart gitlab
+      shell: cd {{ gitlab_install_dir }} && docker compose down && docker compose up -d
+
+  tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      tags: [install]
+
+    - name: Install Docker and dependencies
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+          - python3-docker
+          - certbot
+          - python3-certbot-dns-cloudflare
+          - ca-certificates
+          - curl
+        state: present
+      tags: [install]
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+      tags: [install]
+
+    - name: Add suporte to docker group
+      user:
+        name: suporte
+        groups: docker
+        append: yes
+      tags: [install]
+
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ gitlab_data_dir }}"
+        - "{{ gitlab_data_dir }}/config"
+        - "{{ gitlab_data_dir }}/logs"
+        - "{{ gitlab_data_dir }}/data"
+        - "{{ gitlab_install_dir }}"
+        - "{{ gitlab_cert_dir }}"
+      tags: [install]
+
+    - name: Create Cloudflare credentials file
+      copy:
+        content: |
+          dns_cloudflare_api_token = {{ cloudflare_api_token }}
+        dest: /etc/letsencrypt/cloudflare.ini
+        mode: "0600"
+        owner: root
+        group: root
+      when: cloudflare_api_token is defined
+      tags: [config]
+
+    - name: Generate Let's Encrypt certificate
+      command: >
+        certbot certonly
+        --dns-cloudflare
+        --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
+        --email {{ cloudflare_email }}
+        --agree-tos
+        --non-interactive
+        --dns-cloudflare-propagation-seconds 60
+        --domains {{ gitlab_domain }}
+      args:
+        creates: "/etc/letsencrypt/live/{{ gitlab_domain }}/fullchain.pem"
+      tags: [config]
+
+    - name: Copy certificates to GitLab cert directory
+      copy:
+        src: "/etc/letsencrypt/live/{{ gitlab_domain }}/{{ item.src }}"
+        dest: "{{ gitlab_cert_dir }}/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "0600"
+        remote_src: true
+      loop:
+        - { src: "fullchain.pem", dest: "{{ gitlab_domain }}.crt" }
+        - { src: "privkey.pem", dest: "{{ gitlab_domain }}.key" }
+      tags: [config]
+
+    - name: Set up certificate renewal cron job
+      cron:
+        name: "Renew Let's Encrypt certificates for GitLab"
+        minute: "0"
+        hour: "3"
+        job: "certbot renew --quiet && cp /etc/letsencrypt/live/{{ gitlab_domain }}/fullchain.pem {{ gitlab_cert_dir }}/{{ gitlab_domain }}.crt && cp /etc/letsencrypt/live/{{ gitlab_domain }}/privkey.pem {{ gitlab_cert_dir }}/{{ gitlab_domain }}.key && cd {{ gitlab_install_dir }} && docker compose down && docker compose up -d >> /var/log/gitlab-cert-renewal.log 2>&1"
+        user: root
+      tags: [config]
+
+    - name: Deploy docker-compose configuration
+      template:
+        src: templates/gitlab-docker-compose.yml.j2
+        dest: "{{ gitlab_install_dir }}/docker-compose.yml"
+        mode: "0600"
+      notify: restart gitlab
+      tags: [config]
+
+    - name: Start GitLab
+      shell: cd {{ gitlab_install_dir }} && docker compose up -d
+      tags: [install]
+
+    - name: Wait for GitLab to be ready
+      uri:
+        url: "https://127.0.0.1/users/sign_in"
+        validate_certs: false
+        status_code: 200
+      register: health_check
+      retries: 60
+      delay: 30
+      until: health_check.status == 200
+      tags: [install]
+
+    - name: Create docker-compose systemd service
+      copy:
+        dest: /etc/systemd/system/gitlab.service
+        content: |
+          [Unit]
+          Description=GitLab CE
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          WorkingDirectory={{ gitlab_install_dir }}
+          ExecStart=/usr/bin/docker compose up -d
+          ExecStop=/usr/bin/docker compose down
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: "0644"
+      tags: [install]
+
+    - name: Enable GitLab service
+      systemd:
+        name: gitlab
+        enabled: yes
+        daemon_reload: yes
+      tags: [install]
+
+    - name: Display GitLab status
+      debug:
+        msg: "GitLab CE is running at https://{{ gitlab_domain }}"
+      tags: [install]

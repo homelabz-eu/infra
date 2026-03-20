@@ -19,12 +19,10 @@ variable "workload" {
       "redis",
       "nats",
       "observability-box",
-      # "gitea",
-      # "gitea_runner",
       "github_runner",
+      "gitlab_runner",
       #"harbor",
       "harbor_replication",
-      "minio",
       "vault",
       "argocd",
       "teleport-agent",
@@ -322,22 +320,6 @@ variable "config" {
         "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.homelabz.eu"
         "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
       }
-      minio = {
-        ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.homelabz.eu"
-          "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-          "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
-          "nginx.org/client-max-body-size"              = "0"
-        }
-        ingress_class_name = "nginx"
-        ingress_host       = "s3.toolz.homelabz.eu"
-        console_ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname" = "minio.toolz.homelabz.eu"
-          "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
-        }
-        console_ingress_class_name = "nginx"
-        console_ingress_host       = "minio.toolz.homelabz.eu"
-      }
       redis = {
         ingress_enabled    = false
         ingress_class_name = "nginx"
@@ -366,14 +348,6 @@ variable "config" {
           "nginx.org/client-max-body-size"              = "0"
         }
       }
-      gitea = {
-        domain              = "git.homelabz.eu"
-        ssh_domain          = "git.homelabz.eu"
-        ssh_port            = 2222
-        ingress_class       = "traefik"
-        url                 = "https://git.homelabz.eu"
-        default_actions_url = "https://git.homelabz.eu"
-      }
       github_runner = {
         registry_server = "registry.homelabz.eu"
       }
@@ -386,7 +360,7 @@ variable "config" {
         apps = {
           "harbor"   = "http://harbor-portal.harbor.svc.cluster.local"
           "vault"    = "http://vault.vault.svc.cluster.local:8200"
-          "minio"    = "http://minio-console.default.svc.cluster.local:9001"
+          "minio"    = "https://minio.homelabz.eu:9001"
           "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
         }
         databases = {}
@@ -433,11 +407,6 @@ variable "config" {
       redis_cpu_request    = "50m"
       redis_memory_limit   = "128Mi"
       redis_cpu_limit      = "200m"
-
-      minio_memory_request = "128Mi"
-      minio_cpu_request    = "50m"
-      minio_memory_limit   = "256Mi"
-      minio_cpu_limit      = "200m"
 
       prometheus_memory_request = "256Mi"
       prometheus_memory_limit   = "512Mi"

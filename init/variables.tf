@@ -142,6 +142,22 @@ variable "vm_dns_records" {
       ip     = "192.168.1.101"
       domain = "registry"
     }
+    gitlab = {
+      ip     = "192.168.1.102"
+      domain = "gitlab"
+    }
+    minio = {
+      ip     = "192.168.1.103"
+      domain = "s3"
+    }
+    minio-console = {
+      ip     = "192.168.1.103"
+      domain = "minio"
+    }
+    redis = {
+      ip     = "192.168.1.100"
+      domain = "redis"
+    }
   }
 }
 
@@ -151,8 +167,8 @@ variable "pihole_url" {
   default     = "http://192.168.1.3"
 }
 
-variable "pihole_password" {
-  description = "PiHole admin password"
+variable "pihole_api_token" {
+  description = "PiHole API token (double SHA256 hash of web password)"
   type        = string
   sensitive   = true
 }
@@ -185,4 +201,17 @@ variable "vm_templates" {
     ubuntu24_cloudinit = "ubuntu24-cloudinit"
     ubuntu24_standard  = "ubuntu24-template"
   }
+}
+
+# GitLab
+variable "gitlab_url" {
+  description = "Self-hosted GitLab instance URL"
+  type        = string
+  default     = "https://gitlab.homelabz.eu/api/v4"
+}
+
+variable "gitlab_token" {
+  description = "GitLab personal access token with admin permissions"
+  type        = string
+  sensitive   = true
 }

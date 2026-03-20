@@ -47,7 +47,7 @@ module "externaldns" {
     "--source=istio-gateway",
     "--source=istio-virtualservice",
     "--registry=noop",
-    "--policy=sync",
+    "--policy=upsert-only",
     "--provider=pihole",
     "--pihole-server=http://192.168.1.3",
     ] : [
@@ -55,7 +55,7 @@ module "externaldns" {
     "--source=ingress",
     "--source=service",
     "--registry=noop",
-    "--policy=sync",
+    "--policy=upsert-only",
     "--provider=pihole",
     "--pihole-server=http://192.168.1.3",
   ]
@@ -132,53 +132,13 @@ module "github_runner" {
 
 module "gitlab_runner" {
   count  = contains(local.workload, "gitlab_runner") ? 1 : 0
-  source = "../modules/apps/gitlab-runner"
+  source = "../modules/cicd/gitlab-runner"
 
-  gitlab_token = local.secrets_json["kv/cluster-secret-store/secrets/GITLAB_TOKEN"]["GITLAB_TOKEN"]
+  gitlab_url   = try(var.config[terraform.workspace].gitlab_url, "https://gitlab.homelabz.eu")
+  gitlab_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITLAB_TOKEN"]["GITLAB_TOKEN"], "")
 }
 
-module "gitea" {
-  count  = contains(local.workload, "gitea") ? 1 : 0
-  source = "../modules/git/gitea"
 
-  domain     = try(var.config[terraform.workspace].gitea.domain, "git.homelabz.eu")
-  ssh_domain = try(var.config[terraform.workspace].gitea.ssh_domain, "git.homelabz.eu")
-  ssh_port   = try(var.config[terraform.workspace].gitea.ssh_port, 2222)
-
-  admin_username = "gitea-admin"
-  admin_password = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["ADMIN_PASSWORD"], "")
-  secret_key     = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["SECRET_KEY"], "")
-  internal_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["INTERNAL_TOKEN"], "")
-
-  external_database_host     = "postgres.homelabz.eu"
-  external_database_name     = "gitea"
-  external_database_username = "postgres"
-  external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
-
-  external_redis_host     = "redis-master.default.svc.cluster.local"
-  external_redis_password = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
-
-  ingress_class_name = try(var.config[terraform.workspace].gitea.ingress_class, "traefik")
-  ingress_annotations = {
-    "external-dns.alpha.kubernetes.io/hostname" = try(var.config[terraform.workspace].gitea.domain, "git.homelabz.eu")
-    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
-  }
-
-  default_actions_url = try(var.config[terraform.workspace].gitea.default_actions_url, "https://git.homelabz.eu")
-
-  depends_on = [module.redis]
-}
-
-module "gitea_runner" {
-  count  = contains(local.workload, "gitea_runner") ? 1 : 0
-  source = "../modules/cicd/gitea-runner"
-
-  gitea_url    = try(var.config[terraform.workspace].gitea.url, "https://git.homelabz.eu")
-  runner_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["RUNNER_TOKEN"], "")
-  runner_name  = "k8s-runner-${terraform.workspace}"
-
-  depends_on = [module.gitea]
-}
 
 module "ingress_nginx" {
   count  = contains(local.workload, "ingress_nginx") ? 1 : 0
@@ -227,24 +187,6 @@ module "argocd" {
   istio_CRDs             = var.config[terraform.workspace].istio_CRDs
 }
 
-module "minio" {
-  count                       = contains(local.workload, "minio") ? 1 : 0
-  source                      = "../modules/apps/minio"
-  ingress_annotations         = var.config[terraform.workspace].minio.ingress_annotations
-  ingress_class_name          = var.config[terraform.workspace].minio.ingress_class_name
-  ingress_host                = var.config[terraform.workspace].minio.ingress_host
-  console_ingress_annotations = var.config[terraform.workspace].minio.console_ingress_annotations
-  console_ingress_class_name  = var.config[terraform.workspace].minio.console_ingress_class_name
-  console_ingress_host        = var.config[terraform.workspace].minio.console_ingress_host
-
-
-  root_password  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
-  memory_request = try(var.config[terraform.workspace].minio_memory_request, "256Mi")
-  cpu_request    = try(var.config[terraform.workspace].minio_cpu_request, "50m")
-  memory_limit   = try(var.config[terraform.workspace].minio_memory_limit, "512Mi")
-  cpu_limit      = try(var.config[terraform.workspace].minio_cpu_limit, "200m")
-}
-
 module "oracle_backup" {
   count  = contains(keys(var.config[terraform.workspace]), "oracle_backup") ? 1 : 0
   source = "../modules/apps/oracle-backup"
@@ -257,7 +199,7 @@ module "oracle_backup" {
 
   s3_backup_name    = "terraform-state-backup"
   s3_schedule       = "0 2 * * *"
-  minio_endpoint    = "https://s3.toolz.homelabz.eu"
+  minio_endpoint    = "https://s3.homelabz.eu"
   minio_bucket_path = "terraform"
   s3_backup_path    = "terraform-state-backup"
 
@@ -286,7 +228,7 @@ module "oracle_backup" {
   cpu_request    = "200m"
   cpu_limit      = "1000m"
 
-  depends_on = [module.minio, module.external_secrets]
+  depends_on = [module.external_secrets]
 }
 
 module "registry" {

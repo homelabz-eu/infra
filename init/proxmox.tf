@@ -133,6 +133,12 @@ resource "proxmox_vm_qemu" "vm" {
     }
   }
 
+  startup_shutdown {
+    order            = -1
+    shutdown_timeout = -1
+    startup_delay    = -1
+  }
+
   dynamic "network" {
     for_each = contains(keys(each.value), "network") ? [each.value.network] : []
     content {

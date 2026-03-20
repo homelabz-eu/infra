@@ -2,26 +2,30 @@ terraform {
   required_providers {
     proxmox = {
       source  = "Telmate/proxmox"
-      version = "3.0.2-rc03"
+      version = "3.0.2-rc07"
     }
     github = {
       source  = "integrations/github"
-      version = "~> 6.0"
+      version = "6.11.1"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.0"
+      version = "5.19.0-beta.2"
     }
     pihole = {
-      source  = "ryanwholey/pihole"
-      version = "~> 0.2"
+      source  = "iolave/pihole"
+      version = "0.2.1"
+    }
+    gitlab = {
+      source  = "gitlabhq/gitlab"
+      version = "~> 18.9.0"
     }
   }
   backend "s3" {
     bucket = "terraform"
     key    = "init.tfstate"
     endpoints = {
-      s3 = "https://s3.toolz.homelabz.eu"
+      s3 = "https://s3.homelabz.eu"
     }
     region                      = "main"
     skip_credentials_validation = true
@@ -51,6 +55,11 @@ provider "cloudflare" {
 }
 
 provider "pihole" {
-  url      = var.pihole_url
-  password = var.pihole_password
+  url       = var.pihole_url
+  api_token = var.pihole_api_token
+}
+
+provider "gitlab" {
+  base_url = var.gitlab_url
+  token    = var.gitlab_token
 }

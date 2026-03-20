@@ -1,0 +1,207 @@
+---
+- name: MinIO Object Storage
+  hosts: "{{ target_hosts | default('minio') }}"
+  become: true
+  gather_facts: yes
+  vars:
+    minio_domain: "s3.homelabz.eu"
+    minio_console_domain: "minio.homelabz.eu"
+    minio_data_dir: "/data"
+    minio_install_dir: "/opt/minio"
+    minio_cert_dir: "/opt/minio/certs"
+    vault_addr: "https://vault.toolz.homelabz.eu"
+    initial_buckets:
+      - terraform
+      - artifacts
+      - loki
+      - gitlab-artifacts
+      - gitlab-external-diffs
+      - gitlab-lfs
+      - gitlab-uploads
+      - gitlab-packages
+      - gitlab-dependency-proxy
+      - gitlab-terraform-state
+      - gitlab-pages
+
+  handlers:
+    - name: restart minio
+      shell: cd {{ minio_install_dir }} && docker compose down && docker compose up -d
+
+  tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      tags: [install]
+
+    - name: Install Docker and dependencies
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+          - python3-docker
+          - certbot
+          - python3-certbot-dns-cloudflare
+          - ca-certificates
+          - curl
+        state: present
+      tags: [install]
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+      tags: [install]
+
+    - name: Add suporte to docker group
+      user:
+        name: suporte
+        groups: docker
+        append: yes
+      tags: [install]
+
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ minio_data_dir }}"
+        - "{{ minio_install_dir }}"
+        - "{{ minio_cert_dir }}"
+      tags: [install]
+
+    - name: Create Cloudflare credentials file
+      copy:
+        content: |
+          dns_cloudflare_api_token = {{ cloudflare_api_token }}
+        dest: /etc/letsencrypt/cloudflare.ini
+        mode: "0600"
+        owner: root
+        group: root
+      when: cloudflare_api_token is defined
+      tags: [config]
+
+    - name: Generate Let's Encrypt certificate for S3 API
+      command: >
+        certbot certonly
+        --dns-cloudflare
+        --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
+        --email {{ cloudflare_email }}
+        --agree-tos
+        --non-interactive
+        --dns-cloudflare-propagation-seconds 60
+        --domains {{ minio_domain }},{{ minio_console_domain }}
+      args:
+        creates: "/etc/letsencrypt/live/{{ minio_domain }}/fullchain.pem"
+      tags: [config]
+
+    - name: Copy certificates to MinIO cert directory
+      copy:
+        src: "/etc/letsencrypt/live/{{ minio_domain }}/{{ item.src }}"
+        dest: "{{ minio_cert_dir }}/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "0600"
+        remote_src: true
+      loop:
+        - { src: "fullchain.pem", dest: "public.crt" }
+        - { src: "privkey.pem", dest: "private.key" }
+      tags: [config]
+
+    - name: Set up certificate renewal cron job
+      cron:
+        name: "Renew Let's Encrypt certificates for MinIO"
+        minute: "0"
+        hour: "3"
+        job: "certbot renew --quiet && cp /etc/letsencrypt/live/{{ minio_domain }}/fullchain.pem {{ minio_cert_dir }}/public.crt && cp /etc/letsencrypt/live/{{ minio_domain }}/privkey.pem {{ minio_cert_dir }}/private.key && cd {{ minio_install_dir }} && docker compose down && docker compose up -d >> /var/log/minio-cert-renewal.log 2>&1"
+        user: root
+      tags: [config]
+
+    - name: Deploy docker-compose configuration
+      template:
+        src: templates/minio-docker-compose.yml.j2
+        dest: "{{ minio_install_dir }}/docker-compose.yml"
+        mode: "0600"
+      notify: restart minio
+      tags: [config]
+
+    - name: Start MinIO
+      shell: cd {{ minio_install_dir }} && docker compose up -d
+      tags: [install]
+
+    - name: Wait for MinIO to be ready
+      uri:
+        url: "https://127.0.0.1:9000/minio/health/live"
+        validate_certs: false
+        status_code: 200
+      register: health_check
+      retries: 15
+      delay: 10
+      until: health_check.status == 200
+      tags: [install]
+
+    - name: Create initial buckets
+      shell: |
+        docker exec minio mc alias set local https://localhost:9000 {{ minio_root_user }} {{ minio_root_password }} --insecure
+        docker exec minio mc mb local/{{ item }} --ignore-existing --insecure
+      loop: "{{ initial_buckets }}"
+      when: minio_root_user is defined and minio_root_password is defined
+      tags: [install, config]
+
+    - name: Create docker-compose systemd service
+      copy:
+        dest: /etc/systemd/system/minio.service
+        content: |
+          [Unit]
+          Description=MinIO Object Storage
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          WorkingDirectory={{ minio_install_dir }}
+          ExecStart=/usr/bin/docker compose up -d
+          ExecStop=/usr/bin/docker compose down
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: "0644"
+      tags: [install]
+
+    - name: Enable MinIO service
+      systemd:
+        name: minio
+        enabled: yes
+        daemon_reload: yes
+      tags: [install]
+
+    - name: Write connection info to Vault
+      uri:
+        url: "{{ vault_addr }}/v1/kv/data/cluster-secret-store/secrets/MINIO_VM"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          data:
+            MINIO_HOST: "{{ ansible_host | default('192.168.1.103') }}"
+            MINIO_ENDPOINT: "https://{{ minio_domain }}"
+            MINIO_ROOT_USER: "{{ minio_root_user }}"
+            MINIO_ROOT_PASSWORD: "{{ minio_root_password }}"
+        status_code: [200, 204]
+      delegate_to: localhost
+      become: false
+      vars:
+        ansible_become: false
+      run_once: true
+      when: vault_token is defined and vault_token != "" and minio_root_user is defined
+      tags: [install, vault]
+
+    - name: Display MinIO status
+      debug:
+        msg: "MinIO is running at https://{{ minio_domain }} (Console: https://{{ minio_console_domain }})"
+      tags: [install]

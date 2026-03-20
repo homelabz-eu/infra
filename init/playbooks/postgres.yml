@@ -13,7 +13,7 @@
     backup_keep_days: 7
     databases:
       - harbor
-      - gitea
+      - gitlab
       - authentik
       - immich
       - registry
@@ -24,6 +24,11 @@
     - name: restart postgresql
       systemd:
         name: postgresql
+        state: restarted
+
+    - name: restart redis
+      systemd:
+        name: redis-server
         state: restarted
 
   tasks:
@@ -228,6 +233,97 @@
       run_once: true
       when: vault_token is defined and vault_token != "" and postgres_password is defined
       tags: [install, vault]
+
+    - name: Install Redis
+      apt:
+        name:
+          - redis-server
+        state: present
+        update_cache: yes
+      tags: [install, redis]
+
+    - name: Deploy Redis configuration
+      copy:
+        content: |
+          bind 0.0.0.0
+          protected-mode yes
+          port 6379
+          requirepass {{ redis_password }}
+          maxmemory 512mb
+          maxmemory-policy allkeys-lru
+          tcp-backlog 511
+          timeout 0
+          tcp-keepalive 300
+          daemonize no
+          supervised systemd
+          loglevel notice
+          logfile /var/log/redis/redis-server.log
+          databases 16
+          save 900 1
+          save 300 10
+          save 60 10000
+          stop-writes-on-bgsave-error yes
+          rdbcompression yes
+          rdbchecksum yes
+          dbfilename dump.rdb
+          dir /var/lib/redis
+        dest: /etc/redis/redis.conf
+        owner: redis
+        group: redis
+        mode: '0640'
+      notify: restart redis
+      when: redis_password is defined and redis_password != ""
+      tags: [install, redis, config]
+
+    - name: Enable and start Redis service
+      systemd:
+        name: redis-server
+        enabled: true
+        state: started
+        daemon_reload: true
+      tags: [install, redis]
+
+    - name: Wait for Redis to be ready
+      wait_for:
+        port: 6379
+        host: localhost
+        delay: 2
+        timeout: 30
+      tags: [install, redis]
+
+    - name: Write Redis connection info to Vault
+      uri:
+        url: "{{ vault_addr }}/v1/kv/data/cluster-secret-store/secrets/REDIS_VM"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          data:
+            REDIS_HOST: "{{ ansible_host | default('192.168.1.100') }}"
+            REDIS_PORT: "6379"
+            REDIS_PASSWORD: "{{ redis_password }}"
+        status_code: [200, 204]
+      delegate_to: localhost
+      become: false
+      vars:
+        ansible_become: false
+      run_once: true
+      when: vault_token is defined and vault_token != "" and redis_password is defined
+      tags: [install, redis, vault]
+
+    - name: Check Redis service status
+      command: systemctl status redis-server
+      register: redis_service_status
+      changed_when: false
+      failed_when: false
+      tags: [status]
+
+    - name: Report Redis status
+      debug:
+        msg: "{{ redis_service_status.stdout_lines }}"
+      tags: [status]
 
     - name: Upgrade postgresql packages
       apt:

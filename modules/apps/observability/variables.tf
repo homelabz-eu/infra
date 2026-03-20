@@ -260,5 +260,5 @@ variable "minio_rootPassword" {
 }
 variable "minio_address" {
   type    = string
-  default = "s3.toolz.homelabz.eu"
+  default = "s3.homelabz.eu"
 }

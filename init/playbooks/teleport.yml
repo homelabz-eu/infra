@@ -4,11 +4,11 @@
   become: true
   vars:
     teleport_version: "17.7.1"
-    teleport_edition: "oss"  # Community Edition
+    teleport_edition: "oss" # Community Edition
     teleport_domain: "teleport.homelabz.eu"
     teleport_cluster_name: "homelabz-eu"
     github_org: "homelabz-eu"
-    minio_endpoint: "s3.toolz.homelabz.eu"
+    minio_endpoint: "s3.homelabz.eu"
     minio_bucket: "teleport-recordings"
     authentik_domain: "auth.homelabz.eu"
     teleport_saml_enabled: false
@@ -40,7 +40,7 @@
       get_url:
         url: https://cdn.teleport.dev/install.sh
         dest: /tmp/install_teleport.sh
-        mode: '0755'
+        mode: "0755"
       when: not teleport_installed.stat.exists
       become: true
 
@@ -51,8 +51,8 @@
         /tmp/install_teleport.sh ${TELEPORT_VERSION?} ${TELEPORT_EDITION?}
       args:
         executable: /bin/bash
-      async: 300  # Maximum runtime in seconds (5 minutes)
-      poll: 0  # Fire-and-forget (we'll check status later)
+      async: 300 # Maximum runtime in seconds (5 minutes)
+      poll: 0 # Fire-and-forget (we'll check status later)
       register: install_result
       when: not teleport_installed.stat.exists
       become: true
@@ -62,8 +62,8 @@
         jid: "{{ install_result.ansible_job_id }}"
       register: job_result
       until: job_result.finished
-      retries: 30  # 30 * 10 = 300 seconds
-      delay: 10  # Check every 10 seconds
+      retries: 30 # 30 * 10 = 300 seconds
+      delay: 10 # Check every 10 seconds
       when: not teleport_installed.stat.exists
 
     - name: Verify installation success
@@ -84,7 +84,7 @@
         path: /etc/sudoers.d/secure_path
         line: "Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin"
         create: true
-        mode: '0440'
+        mode: "0440"
 
     - name: Create Teleport directories
       file:
@@ -92,7 +92,7 @@
         state: directory
         owner: root
         group: root
-        mode: '0755'
+        mode: "0755"
       loop:
         - /etc/teleport
         - /var/lib/teleport
@@ -112,7 +112,7 @@
           # Cloudflare API token (recommended)
           dns_cloudflare_api_token = {{ cloudflare_api_token }}
         dest: /etc/letsencrypt/cloudflare.ini
-        mode: '0600'
+        mode: "0600"
         owner: root
         group: root
       when: cloudflare_api_token is defined
@@ -135,7 +135,7 @@
         dest: "/var/lib/teleport/{{ item.dest }}"
         owner: root
         group: root
-        mode: '0600'
+        mode: "0600"
         remote_src: true
       loop:
         - { src: "fullchain.pem", dest: "fullchain.pem" }
@@ -147,7 +147,7 @@
         dest: /usr/local/bin/renew-teleport-certs.sh
         owner: root
         group: root
-        mode: '0755'
+        mode: "0755"
 
     - name: Generate initial Teleport configuration using teleport configure
       shell: |
@@ -167,7 +167,7 @@
         dest: /etc/teleport.yaml
         owner: root
         group: root
-        mode: '0600'
+        mode: "0600"
         backup: true
       notify: restart teleport
 
@@ -245,7 +245,7 @@
         dest: /etc/teleport/saml-connector.yaml
         owner: root
         group: root
-        mode: '0600'
+        mode: "0600"
       when: teleport_saml_enabled | default(false)
       notify: restart teleport
 

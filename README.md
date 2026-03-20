@@ -8,7 +8,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 **OpenTofu-Driven Infrastructure**
 - Modular two-tier architecture: base modules and application modules promoting composability and reusability
-- S3-compatible remote state backend ([s3.toolz.homelabz.eu](https://s3.toolz.homelabz.eu)) with workspace isolation per environment
+- S3-compatible remote state backend ([s3.homelabz.eu](https://s3.homelabz.eu)) with workspace isolation per environment
 - Automated state backup to Oracle Cloud Object Storage via CronJob for disaster recovery
 - YAML-driven VM provisioning using dynamic `for_each` loops for declarative infrastructure definitions
 
@@ -29,19 +29,15 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 **Automated CI/CD Pipelines**
 
-7 GitHub Actions workflows provide comprehensive automation, complemented by local pre-commit hooks for shift-left security:
+Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platform, with GitLab runners on the toolz K8s cluster. Reusable CI templates are centralized in the [pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines) repository. GitHub Actions remain available during transition.
 
-| Workflow | Purpose | Trigger |
-|----------|---------|---------|
-| [opentofu.yml](.github/workflows/opentofu.yml) | OpenTofu workflow, plans on PR and apply on merge | PR/Merge to main |
-| [ansible.yml](.github/workflows/ansible.yml) | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
-| [build.yml](.github/workflows/build.yml) | Docker image builds on Dockerfile changes | File path changes |
-| [sec-trivy.yml](.github/workflows/sec-trivy.yml) | Container and IaC vulnerability scanning | Pull request / Push |
-| [sec-trufflehog.yml](.github/workflows/sec-trufflehog.yml) | Secret leak detection in commits | Pull request / Push |
-| [conventional-commits.yml](.github/workflows/conventional-commits.yml) | Commit message validation | Pull request |
-| [release.yml](.github/workflows/release.yml) | Semantic versioning and changelog generation | Merge to main |
+| Pipeline | Platform | Purpose | Trigger |
+|----------|----------|---------|---------|
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | OpenTofu validate/plan/apply with cluster change detection | MR / Merge to main |
+| [opentofu.yml](.github/workflows/opentofu.yml) | GitHub | OpenTofu workflow (legacy, transition) | PR/Merge to main |
+| [ansible.yml](.github/workflows/ansible.yml) | GitHub | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
 
-**OpenTofu Workflow Deep Dive** ([opentofu.yml](.github/workflows/opentofu.yml)):
+**OpenTofu Workflow Deep Dive** ([.gitlab-ci.yml](.gitlab-ci.yml) / [opentofu.yml](.github/workflows/opentofu.yml)):
 
 **Plan Phase (on PR)**:
 1. Detects changes in `clusters/**` and `secrets/**`
@@ -74,14 +70,14 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 - When secrets are added/removed in [secrets/](secrets/) directory, OpenTofu automatically updates ExternalSecret objects
 - Changes propagate to all clusters via Vault synchronization
 - Namespaces with label `cluster-secrets=true` receive updated secrets automatically on 'cluster-secrets' secret
-- 'cluster-secrets' secret automatically mounted and available as environment variables on github runners
+- 'cluster-secrets' secret automatically mounted and available as environment variables on CI/CD runners (GitLab and GitHub)
 
 
 **Progressive Delivery with Argo Rollouts**
 
 Blue-Green deployment strategy with automated E2E testing and production promotion:
 
-1. **Build Phase**: GitHub Actions builds and pushes container image to Harbor registry (`registry.toolz.homelabz.eu`)
+1. **Build Phase**: GitLab CI builds and pushes container image to Harbor registry (`registry.toolz.homelabz.eu`)
 2. **E2E Testing**: Ephemeral clusters spun up per PR for isolated testing
 3. **Prod Deployment**: Pipeline updates prod kustomization with new image tag, ArgoCD syncs to prod cluster
 
@@ -100,9 +96,9 @@ generators:
         - list:  # Applications
             elements:
               - app: cks-backend
-                repoURL: https://github.com/homelabz-eu/cks-backend
+                repoURL: https://gitlab.homelabz.eu/homelabz-eu/cks-backend
               - app: cks-frontend
-                repoURL: https://github.com/homelabz-eu/cks-frontend
+                repoURL: https://gitlab.homelabz.eu/homelabz-eu/cks-frontend
         - clusters:  # Environments resolved from registered clusters
             selector:
               matchExpressions:
@@ -119,9 +115,9 @@ generators:
 - Retry policy: 5 attempts with exponential backoff
 
 **Application Repositories**:
-- [cks-backend](https://github.com/homelabz-eu/cks-backend) - Backend APIs with Kustomize overlays
-- [cks-frontend](https://github.com/homelabz-eu/cks-frontend) - Web UI with Kustomize overlays
-- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) - Terminal management microservice (toolz)
+- [cks-backend](https://gitlab.homelabz.eu/homelabz-eu/cks-backend) - Backend APIs with Kustomize overlays
+- [cks-frontend](https://gitlab.homelabz.eu/homelabz-eu/cks-frontend) - Web UI with Kustomize overlays
+- [cks-terminal-mgmt](https://gitlab.homelabz.eu/homelabz-eu/cks-terminal-mgmt) - Terminal management microservice (toolz)
 
 Key components:
 - Per-app AnalysisTemplates for Cypress test execution (e.g., `cypress-tests-cks-backend`)
@@ -131,13 +127,12 @@ Key components:
 - Kustomize overlays for environment-specific configuration
 
 **Self-Hosted Runner Infrastructure**
-- Actions Runner Controller (ARC) deployed on toolz cluster
-- Two runner scale sets: `self-hosted` (general-purpose, unprivileged) and `self-hosted-buildkit` (container builds via remote BuildKit daemon)
-- Dedicated BuildKit daemon (single privileged pod) serving all build runners over TCP — eliminates per-runner DinD sidecars
-- Runner pods run fully unprivileged (`runAsNonRoot`, `allowPrivilegeEscalation: false`)
-- Custom runner image with kubectl, Helm, Terraform, SOPS, buildctl, and cloud provider tools
-- GitLab CI runners for multi-platform pipeline support
-- Centralized reusable workflows in dedicated pipelines repository
+- GitLab CI runners on toolz cluster as primary CI/CD execution platform
+- Actions Runner Controller (ARC) on toolz cluster for GitHub Actions (transition period)
+- Two GitHub runner scale sets: `self-hosted` (general-purpose) and `self-hosted-buildkit` (container builds via BuildKit)
+- Dedicated BuildKit daemon (single privileged pod) serving all build runners over TCP
+- Custom runner image with kubectl, Helm, OpenTofu, SOPS, buildctl, and cloud provider tools
+- Centralized reusable CI templates in [pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines) repository
 
 **Key Data Flows**:
 1. **Infrastructure**: Git → CI/CD → clustermgmt (CAPI) → Workload Clusters
@@ -176,7 +171,7 @@ Edge collectors on all workload clusters:
 
 **Cluster Provisioning Workflow**:
 1. **Define Cluster**: Add cluster configuration to `clusters/variables.tf` under `clustermgmt` workspace (`kubernetes-cluster` list)
-2. **CI/CD Apply**: GitHub Actions runs `make apply ENV=clustermgmt`, creating Cluster API manifests
+2. **CI/CD Apply**: GitLab CI runs `make apply ENV=clustermgmt`, creating Cluster API manifests
 3. **Cluster API Provisioning**: Cluster API operator provisions VMs on Proxmox and bootstraps Kubernetes
 4. **Automated Kubeconfig Management**:
    - CI/CD detects cluster changes via output comparison (before/after apply)
@@ -209,7 +204,7 @@ Edge collectors on all workload clusters:
 - **DNS**: Pi-hole for internal resolution (`pr-<number>-<repo>.ephemeral.homelabz.eu`)
 - **Capacity**: 5 concurrent ephemeral clusters maximum
 
-**Workflow Lifecycle** (example: [cks-backend/.github/workflows/ephemeral.yml](https://github.com/homelabz-eu/cks-backend/blob/main/.github/workflows/ephemeral.yml)):
+**Workflow Lifecycle** (example: [cks-backend ephemeral.yml](https://gitlab.homelabz.eu/homelabz-eu/cks-backend/-/blob/main/.github/workflows/ephemeral.yml)):
 
 1. **PR Opened**:
    - Check cluster existence via Cluster API
@@ -304,7 +299,11 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 - CloudNativePG for PostgreSQL
 - Redis for caching
 - NATS for messaging
-- MinIO for S3-compatible object storage
+
+**VM-Based Services** (standalone VMs):
+- MinIO for S3-compatible object storage (192.168.1.103)
+- GitLab CE for self-hosted Git and CI/CD (192.168.1.102)
+- PostgreSQL + Redis VM for stateful services (192.168.1.100)
 
 **Cluster Management** (clustermgmt cluster only):
 - Cluster API Operator v1.12.0 with CAPMOX v0.7.5
@@ -446,7 +445,7 @@ infra/
 │   └── apps/            # 33 application modules categorized as:
 │       ├── Cluster: kubernetes-cluster, clusterapi-operator
 │       ├── Infrastructure: istio, metallb, external-secrets, cert-manager, externaldns, ingress-nginx, kubelet-csr-approver, local-path-provisioner, metrics-server
-│       ├── Data: cloudnative-postgres, cloudnative-postgres-operator, redis, nats, minio
+│       ├── Data: cloudnative-postgres, cloudnative-postgres-operator, redis, nats
 │       ├── Observability: observability, observability-box
 │       ├── CI/CD: argocd, github-runner, gitlab-runner
 │       ├── Security: vault, teleport-agent, authentik, falco
@@ -485,7 +484,7 @@ infra/
 | Cluster | Type | Provisioning | Purpose | Node(s) | Key Workloads |
 |---------|------|--------------|---------|---------|---------------|
 | clustermgmt | K3s | Legacy Ansible | Cluster API management cluster (management plane only) | k8s-tools (single node, NODE02) | Cluster API operator, Cluster Autoscaler |
-| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 2 workers (NODE03) | CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
+| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 2 workers (NODE03) | CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
 | ephemeral | Talos | Cluster API | Per-PR environments | Dynamic | Created/destroyed per pull request |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
@@ -524,11 +523,12 @@ infra/
 - CloudNativePG operator (PostgreSQL 15+ with pgvector, automated backups, managed roles/databases)
 - Redis (Bitnami)
 - NATS with JetStream (messaging)
-- MinIO (S3-compatible object storage)
+- MinIO (S3-compatible object storage, VM-based)
 
 **CI/CD**
-- GitHub Actions with Actions Runner Controller (ARC)
-- GitLab CI runners
+- Self-hosted GitLab CE (`gitlab.homelabz.eu`) as primary Git and CI/CD platform
+- GitLab CI runners on K8s (toolz cluster)
+- GitHub Actions with ARC (transition period)
 - Argo Rollouts (Blue-Green deployments with automated E2E testing via Cypress)
 - Harbor (container registry with pull replication from 9 upstream registries + local Helm chart mirror)
 - Custom runner images with kubectl, Helm, OpenTofu, SOPS, buildctl
@@ -546,7 +546,7 @@ infra/
 
 ## FAQ
 
-### How do GitHub runners access clusters?
+### How do CI/CD runners access clusters?
 
 Clusters are accessible via the `cluster-secrets` Kubernetes secret deployed to namespaces with label `cluster-secrets=true`. This secret contains:
 - `KUBECONFIG`: Combined kubeconfig for all clusters
@@ -674,7 +674,7 @@ The **CKS (Certified Kubernetes Security) training platform** runs on the toolz 
 8. Rapid reset enables high-throughput scenario execution
 
 **Terminal Access**:
-- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) runs on toolz alongside KubeVirt VMs
+- [cks-terminal-mgmt](https://gitlab.homelabz.eu/homelabz-eu/cks-terminal-mgmt) runs on toolz alongside KubeVirt VMs
 - Spawns ttyd processes on-demand for SSH connections to VMs
 - Frontend embeds terminals via iframe with multi-tab support (multiple terminals per VM)
 

@@ -116,7 +116,7 @@ TBD
 
 | Service | Technology | Purpose | URL |
 |---------|-----------|---------|-----|
-| MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.toolz.homelabz.eu](https://s3.toolz.homelabz.eu) |
+| MinIO | S3-compatible object storage (VM) | Terraform state backend, backups | [s3.homelabz.eu](https://s3.homelabz.eu) |
 | Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.toolz.homelabz.eu](https://registry.toolz.homelabz.eu) |
 | Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on toolz cluster | [longhorn.toolz.homelabz.eu](https://longhorn.toolz.homelabz.eu) |
 

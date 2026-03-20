@@ -10,7 +10,3 @@
 * add cool badges https://github.com/kashalls/kromgo
 * wireguard
 * makefile function to clean tofu state (tofu state rm all)
-
-post domain migration
-* migrate postgres manual dns record to tofu
-* make external-dns CRUD and not only CR
