@@ -73,7 +73,7 @@ apply:
     - |
       cd clusters
       mkdir -p /tmp/tofu-outputs
-      for workspace in sandboxy tools observability; do
+      for workspace in clustermgmt toolz observability; do
         tofu workspace select $workspace
         if tofu output -json proxmox_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
           tofu output -json proxmox_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_before.json
@@ -85,7 +85,7 @@ apply:
     - make apply
     - |
       cd clusters
-      for workspace in sandboxy tools observability; do
+      for workspace in clustermgmt toolz observability; do
         tofu workspace select $workspace
         if tofu output -json proxmox_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
           tofu output -json proxmox_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_after.json
@@ -95,7 +95,7 @@ apply:
       done
     - |
       CHANGES_DETECTED=false
-      for workspace in sandboxy tools observability; do
+      for workspace in clustermgmt toolz observability; do
         BEFORE=$(cat /tmp/tofu-outputs/${workspace}_clusters_before.json)
         AFTER=$(cat /tmp/tofu-outputs/${workspace}_clusters_after.json)
         if [ "$BEFORE" != "$AFTER" ]; then
@@ -125,7 +125,7 @@ update-kubeconfigs:
   script:
     - |
       ALL_NEW_CLUSTERS=""
-      for workspace in sandboxy tools observability; do
+      for workspace in clustermgmt toolz observability; do
         BEFORE=$(cat /tmp/tofu-outputs/${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
         AFTER=$(cat /tmp/tofu-outputs/${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
         for cluster in $AFTER; do
@@ -155,7 +155,7 @@ update-kubeconfigs:
       done
     - |
       CHANGES_MADE=false
-      for workspace in sandboxy tools observability; do
+      for workspace in clustermgmt toolz observability; do
         BEFORE=$(cat /tmp/tofu-outputs/${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
         AFTER=$(cat /tmp/tofu-outputs/${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
         for cluster in $AFTER; do

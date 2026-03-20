@@ -77,7 +77,7 @@ Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platfor
 
 Blue-Green deployment strategy with automated E2E testing and production promotion:
 
-1. **Build Phase**: GitLab CI builds and pushes container image to Harbor registry (`registry.toolz.homelabz.eu`)
+1. **Build Phase**: GitLab CI builds and pushes container image to Harbor registry (`registry.homelabz.eu`)
 2. **E2E Testing**: Ephemeral clusters spun up per PR for isolated testing
 3. **Prod Deployment**: Pipeline updates prod kustomization with new image tag, ArgoCD syncs to prod cluster
 
@@ -215,7 +215,7 @@ Edge collectors on all workload clusters:
      - Phase 2: Base operators with CRDs (ClusterIssuer, DNSEndpoint, ExternalSecret)
      - Phase 3: Apps without postgres CRDs
      - Phase 4: Apps with postgres CRDs
-   - Build and push Docker image (`registry.toolz.homelabz.eu/library/<app>:pr-<number>`)
+   - Build and push Docker image (`registry.homelabz.eu/library/<app>:pr-<number>`)
    - Deploy app with `kubectl apply -k kustomize/overlays/ephemeral/`
    - Run Cypress E2E tests in container
    - Post PR comment with environment URL

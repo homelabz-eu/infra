@@ -32,7 +32,7 @@ variable "timeout" {
 variable "harbor_domain" {
   description = "Domain for Harbor"
   type        = string
-  default     = "registry.toolz.homelabz.eu"
+  default     = "registry.homelabz.eu"
 }
 
 variable "notary_domain" {
@@ -120,7 +120,7 @@ variable "use_external_redis" {
 variable "external_redis_host" {
   description = "External Redis host"
   type        = string
-  default     = "redis.toolz.homelabz.eu"
+  default     = "redis.homelabz.eu"
 }
 
 variable "external_redis_port" {
@@ -173,7 +173,7 @@ variable "ingress_annotations" {
   description = "Annotations for Harbor ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.homelabz.eu"
+    "external-dns.alpha.kubernetes.io/hostname"   = "registry.homelabz.eu"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"

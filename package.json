@@ -5,7 +5,7 @@
     "private": true,
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/homelabz-eu/infra.git"
+        "url": "git+https://gitlab.homelabz.eu/homelabz-eu/infra.git"
     },
     "author": "homelabz-eu",
     "devDependencies": {
@@ -24,7 +24,7 @@
     },
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/homelabz-eu/infra/issues"
+        "url": "https://gitlab.homelabz.eu/homelabz-eu/infra/issues"
     },
-    "homepage": "https://github.com/homelabz-eu/infra#readme"
+    "homepage": "https://gitlab.homelabz.eu/homelabz-eu/infra#readme"
 }

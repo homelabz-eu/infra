@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HARBOR_REGISTRY="${HARBOR_REGISTRY:-registry.toolz.homelabz.eu}"
+HARBOR_REGISTRY="${HARBOR_REGISTRY:-registry.homelabz.eu}"
 HARBOR_PROJECT="${HARBOR_PROJECT:-helm-charts}"
 CHARTS_FILE="${CHARTS_FILE:-$(dirname "$0")/helm-charts.yaml}"
 TMPDIR=$(mktemp -d)

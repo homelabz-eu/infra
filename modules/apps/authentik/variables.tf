@@ -97,7 +97,7 @@ variable "postgres_secret_namespace" {
 variable "redis_host" {
   description = "Redis host"
   type        = string
-  default     = "redis-redis-master.default.svc.cluster.local"
+  default     = "redis.homelabz.eu"
 }
 
 variable "redis_port" {

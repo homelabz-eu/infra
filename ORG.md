@@ -11,9 +11,9 @@ The homelabz.eu organization encompasses a complete infrastructure and applicati
 - **Infrastructure as Code** with OpenTofu modular architecture
 - **GitOps-driven continuous deployment** with ArgoCD ApplicationSets, cluster generator, and progressive delivery via Argo Rollouts
 - **Comprehensive observability** using Prometheus, Grafana, Jaeger, Loki, and OpenTelemetry with hub-and-spoke architecture
-- **Self-hosted CI/CD infrastructure** with GitHub Actions Runner Controller (ARC) and GitLab runners
+- **Self-hosted CI/CD infrastructure** with GitLab CI runners on Kubernetes
 - **Defense-in-depth security** with Vault, cert-manager, Istio service mesh, SOPS encryption, and External Secrets Operator
-- **Automated cluster bootstrapping** via Cluster API on tools cluster (management cluster)
+- **Automated cluster bootstrapping** via Cluster API on clustermgmt cluster (management cluster)
 - **Automated kubeconfig management** with SOPS encryption and Vault synchronization
 - **Progressive delivery pipelines** with automated E2E testing and blue-green deployments
 
@@ -55,14 +55,14 @@ TBD
 
 ### Infrastructure & Platform
 
-**[infra](https://github.com/homelabz-eu/infra)**: Complete infrastructure-as-code repository
+**[infra](https://gitlab.homelabz.eu/homelabz-eu/infra)**: Complete infrastructure-as-code repository
 - OpenTofu modules for Kubernetes workload deployment
 - Cluster API integration for automated cluster provisioning (Talos Linux, kubeadm)
 - Ansible playbooks for legacy cluster bootstrapping (K3s clusters)
 - GitHub Actions workflows for automated infrastructure lifecycle with kubeconfig management
 - SOPS-encrypted secrets management with age encryption and Vault synchronization
 
-**[pipelines](https://github.com/homelabz-eu/pipelines)**: Centralized CI/CD workflows
+**[pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines)**: Centralized CI/CD workflows
 - Reusable GitHub Actions workflows for application deployment
 - Multi-environment Kustomize-based deployment pipelines
 - Security scanning and validation workflows
@@ -70,20 +70,20 @@ TBD
 
 ### Application Repositories
 
-**[cks-backend](https://github.com/homelabz-eu/cks-backend)**: CKS training platform backend
+**[cks-backend](https://gitlab.homelabz.eu/homelabz-eu/cks-backend)**: CKS training platform backend
 - Go-based backend implementing cluster pool management for Kubernetes security training
 - KubeVirt integration for VM-based Kubernetes cluster provisioning
 - Snapshot-based restoration achieving sub-second session allocation
 - Unified validation engine supporting resource checks, script execution, and file content validation
 - WebSocket terminal access with deterministic terminal IDs for reconnection
 
-**[cks-frontend](https://github.com/homelabz-eu/cks-frontend)**: CKS training platform frontend
+**[cks-frontend](https://gitlab.homelabz.eu/homelabz-eu/cks-frontend)**: CKS training platform frontend
 - Next.js 14 application with browser-based terminal emulation using xterm.js
 - SWR-based state management with optimistic updates
 - Multi-stage Docker build achieving 70% image size reduction via standalone output
 - Admin dashboard for cluster pool and session management
 
-**[cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt)**: Terminal management microservice
+**[cks-terminal-mgmt](https://gitlab.homelabz.eu/homelabz-eu/cks-terminal-mgmt)**: Terminal management microservice
 - Go-based service running on toolz cluster alongside KubeVirt VMs
 - Spawns ttyd processes on-demand for SSH connections to VMs
 - Browser-based terminal access via iframe with multi-tab support
@@ -107,7 +107,7 @@ TBD
 | cert-manager | Automated TLS certificate management | Let's Encrypt with DNS-01 challenge | Cluster-internal |
 | External-DNS | Dynamic DNS record management | Cloudflare and Pi-hole integration | Cluster-internal |
 | External Secrets | Vault to Kubernetes secret sync | ClusterSecretStore with namespace selector | Cluster-internal |
-| Istio | Service mesh for dev cluster | mTLS, traffic management, observability | Gateway at dev cluster |
+| Istio | Service mesh for prod cluster | mTLS, traffic management, observability | Gateway at prod cluster |
 | NGINX Ingress | Ingress controller for other clusters | HTTP/HTTPS routing with TLS termination | Multiple clusters |
 | MetalLB | LoadBalancer for bare metal | Layer 2 mode for service exposure | Vanilla K8s clusters |
 | KubeVirt | Virtual machine orchestration | Nested VMs on Kubernetes | toolz cluster |
@@ -117,7 +117,7 @@ TBD
 | Service | Technology | Purpose | URL |
 |---------|-----------|---------|-----|
 | MinIO | S3-compatible object storage (VM) | Terraform state backend, backups | [s3.homelabz.eu](https://s3.homelabz.eu) |
-| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.toolz.homelabz.eu](https://registry.toolz.homelabz.eu) |
+| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.homelabz.eu](https://registry.homelabz.eu) |
 | Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on toolz cluster | [longhorn.toolz.homelabz.eu](https://longhorn.toolz.homelabz.eu) |
 
 ### Secrets & Security
@@ -137,7 +137,7 @@ TBD
 | GitHub Actions Runners | Actions Runner Controller (ARC) | tools cluster |
 | GitLab Runners | GitLab Runner with Docker executor | tools cluster |
 | Custom Runner Image | Docker image with kubectl, Helm, Terraform, SOPS | Harbor registry |
-| Reusable Workflows | Shared GitHub Actions workflows | [pipelines](https://github.com/homelabz-eu/pipelines) |
+| Reusable CI Templates | Shared GitLab CI templates | [pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines) |
 
 ### Observability Stack
 
@@ -364,9 +364,9 @@ Other:
 ## Documentation & Resources
 
 **Infrastructure Documentation**
-- [Infrastructure README](https://github.com/homelabz-eu/infra): Complete infrastructure overview
+- [Infrastructure README](https://gitlab.homelabz.eu/homelabz-eu/infra): Complete infrastructure overview
 
 **Application Documentation**
-- [Pipelines Documentation](https://github.com/homelabz-eu/pipelines): Reusable workflow specifications
-- [CKS Backend](https://github.com/homelabz-eu/cks-backend): CKS training platform backend implementation
-- [CKS Frontend](https://github.com/homelabz-eu/cks-frontend): CKS training platform web interface
+- [Pipelines Documentation](https://gitlab.homelabz.eu/homelabz-eu/pipelines): Reusable workflow specifications
+- [CKS Backend](https://gitlab.homelabz.eu/homelabz-eu/cks-backend): CKS training platform backend implementation
+- [CKS Frontend](https://gitlab.homelabz.eu/homelabz-eu/cks-frontend): CKS training platform web interface

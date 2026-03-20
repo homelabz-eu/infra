@@ -20,13 +20,13 @@ fi
 
 # Step 1: Delete Cluster API resources
 echo "Step 1: Deleting Cluster API resources..."
-kubectl delete cluster $CLUSTER_NAME -n $CLUSTER_NAME --context tools --ignore-not-found=true
+kubectl delete cluster $CLUSTER_NAME -n $CLUSTER_NAME --context clustermgmt --ignore-not-found=true
 
 echo "Waiting for cluster deletion..."
 kubectl wait --for=delete cluster/$CLUSTER_NAME -n $CLUSTER_NAME \
-    --timeout=5m --context tools || true
+    --timeout=5m --context clustermgmt || true
 
-kubectl delete namespace $CLUSTER_NAME --context tools --ignore-not-found=true
+kubectl delete namespace $CLUSTER_NAME --context clustermgmt --ignore-not-found=true
 echo ""
 
 # Step 2: Release IP

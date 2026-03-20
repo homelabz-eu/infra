@@ -98,7 +98,7 @@ module "argocd" {
   source = "../../modules/apps/argocd"
 
   namespace              = "argocd"
-  install_argocd         = terraform.workspace == "tools"
+  install_argocd         = terraform.workspace == "toolz"
   argocd_version         = "7.7.12"
   argocd_domain          = var.config[terraform.workspace].argocd_domain
   ingress_enabled        = true
@@ -146,7 +146,7 @@ module "postgres_cnpg" {
   create_namespace = false
   create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
-  registry   = "registry.toolz.homelabz.eu"
+  registry   = "registry.homelabz.eu"
   repository = "library/cloudnative-postgres"
   pg_version = "latest"
 

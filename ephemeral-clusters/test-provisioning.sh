@@ -56,28 +56,28 @@ envsubst < ephemeral-clusters/cluster-api/k3s-cluster.yaml.tpl > /tmp/${CLUSTER_
 echo "Manifest saved to: /tmp/${CLUSTER_NAME}-cluster.yaml"
 echo ""
 
-# Step 4: Apply to tools cluster
-echo "Step 4: Applying Cluster API manifest to tools cluster..."
-kubectl apply -f /tmp/${CLUSTER_NAME}-cluster.yaml --context tools
+# Step 4: Apply to clustermgmt cluster
+echo "Step 4: Applying Cluster API manifest to clustermgmt cluster..."
+kubectl apply -f /tmp/${CLUSTER_NAME}-cluster.yaml --context clustermgmt
 echo ""
 
 # Step 4.5: Copy proxmox-credentials secret to namespace
 echo "Step 4.5: Copying proxmox-credentials secret..."
-kubectl --context tools get secret proxmox-credentials -n k3s-test -o json | \
+kubectl --context clustermgmt get secret proxmox-credentials -n k3s-test -o json | \
   jq 'del(.metadata.creationTimestamp, .metadata.resourceVersion, .metadata.uid, .metadata.ownerReferences, .metadata.finalizers) | .metadata.namespace = "'$CLUSTER_NAME'"' | \
-  kubectl --context tools apply -f - > /dev/null 2>&1 || \
+  kubectl --context clustermgmt apply -f - > /dev/null 2>&1 || \
   echo "Warning: Could not copy proxmox-credentials (may already exist)"
 echo ""
 
 # Step 5: Wait for cluster available
 echo "Step 5: Waiting for cluster to be available (max 5 minutes)..."
-kubectl wait --for=condition=Available cluster/$CLUSTER_NAME -n $CLUSTER_NAME --timeout=5m --context tools
+kubectl wait --for=condition=Available cluster/$CLUSTER_NAME -n $CLUSTER_NAME --timeout=5m --context clustermgmt
 echo "Cluster is available!"
 echo ""
 
 # Step 6: Extract kubeconfig
 echo "Step 6: Extracting kubeconfig..."
-kubectl get secret ${CLUSTER_NAME}-kubeconfig -n $CLUSTER_NAME --context tools \
+kubectl get secret ${CLUSTER_NAME}-kubeconfig -n $CLUSTER_NAME --context clustermgmt \
     -o jsonpath='{.data.value}' | base64 -d > /tmp/${CLUSTER_NAME}-kubeconfig
 echo "Kubeconfig saved to: /tmp/${CLUSTER_NAME}-kubeconfig"
 echo ""

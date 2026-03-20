@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 ENVIRONMENTS := prod clustermgmt toolz home observability
-DEFAULT_ENV := tools
+DEFAULT_ENV := toolz
 TOFU_DIR := clusters
 EPHEMERAL_TOFU_DIR := ephemeral-clusters/opentofu
 EPHEMERAL_DIR := ephemeral-clusters/opentofu
@@ -68,7 +68,7 @@ Utilities:
   make help                     - Show this help message
 
 Examples:
-  make plan ENV=dev             - Plan changes for dev environment
+  make plan ENV=toolz             - Plan changes for dev environment
   make apply ENV=toolz          - Apply changes to toolz environment
   make init-apply               - Apply init changes
 endef
@@ -86,7 +86,7 @@ init: install-crypto-tools
 .PHONY: create-workspace
 create-workspace:
 	@if [ -z "$(ENV)" ]; then \
-		echo -e "${RED}ERROR: ENV is required. Example: make create-workspace ENV=dev${NC}"; \
+		echo -e "${RED}ERROR: ENV is required. Example: make create-workspace ENV=toolz${NC}"; \
 		exit 1; \
 	fi
 	@echo -e "${CYAN}Creating workspace for $(ENV)...${NC}"
@@ -161,7 +161,7 @@ apply:
 .PHONY: destroy
 destroy:
 	@if [ -z "$(ENV)" ]; then \
-		echo -e "${RED}ERROR: ENV is required. Example: make destroy ENV=dev${NC}"; \
+		echo -e "${RED}ERROR: ENV is required. Example: make destroy ENV=toolz${NC}"; \
 		exit 1; \
 	fi
 	@echo -e "${RED}WARNING: This will destroy all resources in the $(ENV) environment!${NC}"
@@ -177,7 +177,7 @@ destroy:
 .PHONY: state-clean
 state-clean:
 	@if [ -z "$(ENV)" ]; then \
-		echo -e "${RED}ERROR: ENV is required. Example: make state-clean ENV=dev${NC}"; \
+		echo -e "${RED}ERROR: ENV is required. Example: make state-clean ENV=toolz${NC}"; \
 		exit 1; \
 	fi
 	@echo -e "${CYAN}Listing resources in state for $(ENV) environment...${NC}"
@@ -347,7 +347,7 @@ test-kubeconfig-update:
 		--namespace dev \
 		--vault-path kv/cluster-secret-store/secrets \
 		--vault-addr $(VAULT_ADDR) \
-		--management-context tools \
+		--management-context clustermgmt \
 		--dry-run \
 		--debug
 
@@ -433,7 +433,7 @@ ephemeral-destroy: ephemeral-init
 	@echo -e "${RED}WARNING: This will destroy ephemeral infrastructure for $(WORKSPACE)!${NC}"
 	@echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
 	echo -e "${CYAN}Step 1: Deleting Cluster API cluster (this will remove VMs automatically)...${NC}"; \
-	kubectl delete cluster "$(WORKSPACE)" -n "$(WORKSPACE)" --context tools --kubeconfig ~/.kube/config --timeout=5m || echo "Cluster already deleted or not found"; \
+	kubectl delete cluster "$(WORKSPACE)" -n "$(WORKSPACE)" --context clustermgmt --kubeconfig ~/.kube/config --timeout=5m || echo "Cluster already deleted or not found"; \
 	echo -e "${CYAN}Step 2: Deleting OpenTofu workspace...${NC}"; \
 	cd $(EPHEMERAL_DIR) && \
 		tofu workspace select default && \
