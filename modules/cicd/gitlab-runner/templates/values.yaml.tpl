@@ -28,12 +28,12 @@ runners:
                         name: cluster-secrets
                         key: HARBOR_KEY
                 volumeMounts:
-                  - name: kubeconfig-volume
+                  - name: cluster-secrets-volume
                     mountPath: "/tmp/kubeconfig"
                     subPath: KUBECONFIG
             volumes:
-              - name: kubeconfig-volume
+              - name: cluster-secrets-volume
                 secret:
-                  secretName: kubeconfig
+                  secretName: cluster-secrets
           '''
           patch_type = "strategic"
