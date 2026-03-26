@@ -165,7 +165,7 @@ build-dockerfiles:
         echo "Waiting for Docker daemon... ($i/30)"
         sleep 2
       done
-    - echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u admin --password-stdin
+    - echo "$HARBOR_KEY" | docker login $REGISTRY -u admin --password-stdin
     - |
       CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
       MODIFIED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "(^|/)Dockerfile$" | grep -v "/\." | grep -v "/node_modules/" || true)
