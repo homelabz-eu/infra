@@ -123,13 +123,9 @@
             }
         ],
         [
-            "@semantic-release/github",
+            "@semantic-release/gitlab",
             {
-                "assets": [],
-                "addReleases": "bottom",
-                "successComment": false,
-                "failComment": false,
-                "releasedLabels": false
+                "assets": []
             }
         ]
     ]

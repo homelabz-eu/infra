@@ -1,37 +1,58 @@
+include:
+  - project: "homelabz-eu/pipelines"
+    file: "/ci-templates.yml"
+
 stages:
   - validate
   - plan
+  - build
   - apply
   - post-apply
+  - release
 
 variables:
   TF_IN_AUTOMATION: "true"
   TF_VAR_VAULT_TOKEN: ${VAULT_TOKEN}
+  TF_VAR_sops_age_key: ${SOPS}
+  TF_VAR_kubeconfig_path: /tmp/kubeconfig
 
 .opentofu:
+  image: registry.homelabz.eu/library/gitlab-ci:latest
   tags:
     - k8s-gitlab-runner
   before_script:
     - mkdir -p ~/.sops/keys
-    - echo "$SOPS_AGE_KEY" > ~/.sops/keys/sops-key.txt
+    - echo "$SOPS" > ~/.sops/keys/sops-key.txt
     - chmod 600 ~/.sops/keys/sops-key.txt
     - export SOPS_AGE_KEY_FILE=~/.sops/keys/sops-key.txt
+    - export AWS_ACCESS_KEY_ID="$rootUser"
+    - export AWS_SECRET_ACCESS_KEY="$rootPassword"
+    - export KUBECONFIG=/tmp/kubeconfig
     - make init
+    - cd clusters && python3 load_secrets.py && cd ..
 
-validate:
-  extends: .opentofu
-  stage: validate
-  script:
-    - make fmt
-    - make validate
+.tofu-changes:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
         - clusters/**
         - secrets/**
 
+# ==================== MR PIPELINE ====================
+
+validate:
+  extends:
+    - .opentofu
+    - .tofu-changes
+  stage: validate
+  script:
+    - make fmt
+    - make validate
+
 plan:
-  extends: .opentofu
+  extends:
+    - .opentofu
+    - .tofu-changes
   stage: plan
   script:
     - make plan
@@ -39,14 +60,11 @@ plan:
     paths:
       - clusters/plan.txt
     expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - clusters/**
-        - secrets/**
 
 plan:comment:
+  extends: .tofu-changes
   stage: plan
+  image: registry.homelabz.eu/library/gitlab-ci:latest
   tags:
     - k8s-gitlab-runner
   needs:
@@ -54,17 +72,125 @@ plan:comment:
       artifacts: true
   script:
     - |
-      PLAN_OUTPUT=$(cat clusters/plan.txt | head -c 65000)
-      BODY="## OpenTofu Plan\n\`\`\`hcl\n${PLAN_OUTPUT}\n\`\`\`"
-      curl --request POST \
-        --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes" \
-        --data-urlencode "body=${BODY}"
+      > /tmp/summary.txt
+      while IFS= read -r line; do
+        case "$line" in
+          *"Planning changes for"*"environment"*)
+            env_name=$(echo "$line" | sed 's/.*Planning changes for \(.*\) environment.*/\1/')
+            echo "### ${env_name}" >> /tmp/summary.txt
+            echo "" >> /tmp/summary.txt
+            ;;
+          *"No changes"*|*"Your infrastructure matches"*)
+            echo "- No changes" >> /tmp/summary.txt
+            ;;
+          *"# "*"will be"*)
+            trimmed=$(echo "$line" | sed 's/^[[:space:]]*# //')
+            echo "- \`${trimmed}\`" >> /tmp/summary.txt
+            ;;
+          "Plan:"*)
+            echo "- **${line}**" >> /tmp/summary.txt
+            echo "" >> /tmp/summary.txt
+            ;;
+        esac
+      done < clusters/plan.txt
+    - |
+      jq -Rsn \
+        '[inputs] | .[0] as $summary | .[1] as $raw |
+        {"body": ("## OpenTofu Plan\n\n" + $summary + "\n---\n\n<details>\n<summary>Full plan output</summary>\n\n```\n" + $raw + "\n```\n\n</details>")}' \
+        /tmp/summary.txt clusters/plan.txt > /tmp/comment.json
+    - |
+      if [ "$(wc -c < /tmp/comment.json)" -gt 999000 ]; then
+        jq -n --arg url "${CI_JOB_URL}/artifacts/browse" \
+          '{"body": ("## OpenTofu Plan\n\n> Plan output too large for MR comment. Check the [plan job artifacts](" + $url + ") for full output.")}' \
+          > /tmp/comment.json
+      fi
+    - >
+      curl -f --request POST
+      --header "PRIVATE-TOKEN: ${GITLAB_PAT}"
+      --header "Content-Type: application/json"
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes"
+      --data @/tmp/comment.json
+
+trufflehog-scan:
+  stage: validate
+  tags:
+    - k8s-gitlab-runner
+  image:
+    name: trufflesecurity/trufflehog:latest
+    entrypoint: [""]
+  script:
+    - trufflehog git file://. --since-commit $CI_MERGE_REQUEST_DIFF_BASE_SHA --results=verified,unknown --fail
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+conventional-commits:
+  stage: validate
+  tags:
+    - k8s-gitlab-runner
+  image: alpine:latest
+  script:
+    - |
+      TITLE="$CI_MERGE_REQUEST_TITLE"
+      PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?:"
+      if echo "$TITLE" | grep -qE "$PATTERN"; then
+        echo "MR title follows conventional commits: $TITLE"
+      else
+        echo "ERROR: MR title does not follow conventional commits format"
+        echo "Title: $TITLE"
+        echo "Expected: type(scope): description"
+        echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+        exit 1
+      fi
+      SUBJECT=$(echo "$TITLE" | sed -E "s/$PATTERN\s*//")
+      if echo "$SUBJECT" | grep -qE "^[A-Z]"; then
+        echo "ERROR: Subject must start with a lowercase letter"
+        echo "Subject: $SUBJECT"
+        exit 1
+      fi
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# ==================== MAIN BRANCH PIPELINE ====================
+
+build-dockerfiles:
+  stage: build
+  extends: .build-docker-image-template
+  variables:
+    REGISTRY: registry.homelabz.eu
+    REGISTRY_PROJECT: library
+  script:
+    - |
+      for i in $(seq 1 30); do
+        docker info >/dev/null 2>&1 && break
+        echo "Waiting for Docker daemon... ($i/30)"
+        sleep 2
+      done
+    - echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u admin --password-stdin
+    - |
+      CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
+      MODIFIED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "(^|/)Dockerfile$" | grep -v "/\." | grep -v "/node_modules/" || true)
+
+      if [ -z "$MODIFIED_DOCKERFILES" ]; then
+        echo "No Dockerfiles were modified. Skipping build."
+        exit 0
+      fi
+
+      echo "Modified Dockerfiles:"
+      echo "$MODIFIED_DOCKERFILES"
+
+      echo "$MODIFIED_DOCKERFILES" | while read -r DOCKERFILE; do
+        if [ -n "$DOCKERFILE" ]; then
+          DIR=$(dirname "$DOCKERFILE")
+          IMAGE_NAME=$(basename "$DIR")
+          echo "Building $DOCKERFILE as $REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest"
+          docker build -t "$REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest" "$DIR"
+          docker push "$REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest"
+        fi
+      done
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
       changes:
-        - clusters/**
-        - secrets/**
+        - "**/Dockerfile"
 
 apply:
   extends: .opentofu
@@ -111,10 +237,98 @@ apply:
       - /tmp/tofu-outputs/
     expire_in: 1 day
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: $CI_COMMIT_BRANCH == "main"
       changes:
         - clusters/**
         - secrets/**
+
+ansible:
+  stage: apply
+  image: registry.homelabz.eu/library/gitlab-ci:latest
+  tags:
+    - k8s-gitlab-runner
+  script:
+    - |
+      COMBINED="$CI_COMMIT_MESSAGE"
+      if [[ ! $COMBINED =~ \[ansible[[:space:]]+([^\]]+)\] ]]; then
+        echo "No ansible command found in commit message, skipping"
+        exit 0
+      fi
+      PLAYBOOK="${BASH_REMATCH[1]}"
+      PLAYBOOK=$(echo $PLAYBOOK | xargs)
+      echo "Found playbook: $PLAYBOOK"
+    - |
+      python3 -m pip install --upgrade pip
+      pip install ansible
+    - |
+      INVENTORY_FILE="proxmox/k8s.ini"
+      PLAYBOOK_DIR="proxmox/playbooks"
+      NEW_HOSTS_FILE="proxmox/new_hosts.txt"
+      VAULT_ANSIBLE_ADDR="https://vault.toolz.homelabz.eu"
+
+      if [[ $PLAYBOOK =~ ^k8s-(.+)$ ]]; then
+        echo "Detected K3s cluster: ${BASH_REMATCH[1]}"
+        PLAYBOOK_PATH="$PLAYBOOK_DIR/k8s.yml"
+        CLUSTER_NAME="${BASH_REMATCH[1]}"
+        PLAYBOOK_TYPE="k3s"
+      else
+        echo "Detected direct playbook: $PLAYBOOK"
+        if [ -f "$PLAYBOOK_DIR/${PLAYBOOK}.yml" ]; then
+          PLAYBOOK_PATH="$PLAYBOOK_DIR/${PLAYBOOK}.yml"
+          PLAYBOOK_TYPE="direct"
+        else
+          echo "Playbook file not found: $PLAYBOOK_DIR/${PLAYBOOK}.yml"
+          exit 1
+        fi
+      fi
+    - |
+      if [ ! -f "$INVENTORY_FILE" ]; then
+        echo "Inventory file $INVENTORY_FILE not found"
+        exit 1
+      fi
+    - |
+      mkdir -p ~/.ssh
+      echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+      echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+      chmod 600 ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_ed25519
+
+      if [ -f "$NEW_HOSTS_FILE" ] && [ -s "$NEW_HOSTS_FILE" ]; then
+        while IFS=, read -r IP ENV; do
+          if [ -n "$IP" ] && [[ $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null || true
+          fi
+        done < "$NEW_HOSTS_FILE"
+      fi
+    - |
+      export ANSIBLE_HOST_KEY_CHECKING=False
+
+      if [[ "$PLAYBOOK_TYPE" == "k3s" ]]; then
+        ansible-playbook "$PLAYBOOK_PATH" -i "$INVENTORY_FILE" \
+          -e "target_hosts=$PLAYBOOK" \
+          -e "vault_token=${VAULT_TOKEN}" \
+          -e "vault_addr=$VAULT_ANSIBLE_ADDR"
+      else
+        if [ -f "$NEW_HOSTS_FILE" ] && [ -s "$NEW_HOSTS_FILE" ]; then
+          while IFS=, read -r IP ENV; do
+            if [ -n "$IP" ] && [ -n "$ENV" ]; then
+              TEMP_INVENTORY=$(mktemp)
+              echo "[all]" > $TEMP_INVENTORY
+              echo "$ENV ansible_host=$IP ansible_user=suporte" >> $TEMP_INVENTORY
+              ansible-playbook -i "$TEMP_INVENTORY" "$PLAYBOOK_PATH" \
+                -e "ansible_user=suporte" \
+                -e "target_hosts=all" \
+                -e "vault_token=${VAULT_TOKEN}" \
+                -e "vault_addr=$VAULT_ANSIBLE_ADDR"
+              rm $TEMP_INVENTORY
+            fi
+          done < "$NEW_HOSTS_FILE"
+        else
+          ansible-playbook "$PLAYBOOK_PATH" -i "$INVENTORY_FILE"
+        fi
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
 update-kubeconfigs:
   extends: .opentofu
@@ -140,7 +354,8 @@ update-kubeconfigs:
         echo "Waiting for cluster $cluster..."
         TIMEOUT=1800; ELAPSED=0; INTERVAL=10
         while [ $ELAPSED -lt $TIMEOUT ]; do
-          STATUS=$(kubectl --context clustermgmt get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
+          STATUS=$(kubectl --context clustermgmt get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" \
+            -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
           if [ "$STATUS" = "True" ]; then
             echo "Cluster $cluster is Available"
             break
@@ -172,12 +387,25 @@ update-kubeconfigs:
         git config user.email "gitlab-ci@homelabz.eu"
         git config user.name "GitLab CI"
         git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
-        git commit -m "chore: Update KUBECONFIG with Cluster API clusters"
+        git commit -m "chore: update KUBECONFIG with Cluster API clusters"
         git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:main
         make apply ENV=toolz TARGET='module.vault[0]'
       fi
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CHANGES_DETECTED == "true"'
+    - if: $CI_COMMIT_BRANCH == "main" && $CHANGES_DETECTED == "true"
       changes:
         - clusters/**
         - secrets/**
+
+# ==================== RELEASE ====================
+
+release:
+  stage: release
+  tags:
+    - k8s-gitlab-runner
+  image: node:lts
+  script:
+    - npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/gitlab conventional-changelog-conventionalcommits
+    - npx semantic-release
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
