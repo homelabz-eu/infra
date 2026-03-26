@@ -1,3 +1,58 @@
+## [1.11.7](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.6...v1.11.7) (2026-03-26)
+
+### Tasks
+
+* add Redis Dockerfile using official image ([83ae6b8](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/83ae6b80661b9138ce939eccec989c2372d9ba4d))
+* **argocd:** switch from GitHub to GitLab repos, add credential template ([eaae267](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/eaae267bdd48f8c6cd9d08fa08bca922e61bb37a))
+* **argo:** deprecate demo-apps ([d64711e](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/d64711e9fbbed0a0f4a96c30d8119635ee7752c7))
+* **cks-terminal-mgmt:** argo ([#135](https://gitlab.homelabz.eu/homelabz-eu/infra/issues/135)) ([071d0ce](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/071d0ce2d2d9a15a4caaf3a35915eec8ad5616c0))
+* **cks-terminal-mgmt:** argo ([#136](https://gitlab.homelabz.eu/homelabz-eu/infra/issues/136)) ([34eb5ac](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/34eb5ac21524d5b892579af6ed4cb0bf5338c5ca))
+* **dev:** removal ([9a082f8](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/9a082f8207b0edce834d7f067030d00d6d07cc85))
+* **docs:** update all references for GitLab migration ([83dd7cb](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/83dd7cb53bb3ec1b91a53a918a78c64db2421fab))
+* **docs:** update README ([8686982](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/86869828d62f5dac81b36ed7da72a2ad2bb29ab1))
+* **domain:** migration ([6200c8d](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/6200c8db5c40e91c68be06ef8d98e38c79a0b538))
+* **gitlab:** add GitLab CI pipelines and update README for GitLab migration ([4b68708](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/4b68708691f7ab6592fa684fe8035d1b365faee7))
+* **local-first:** docker image and helm replication locally ([5a45688](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/5a45688827cbc61075b3edcf0a5573b25cf8760d))
+* **pipelines:** centralize ([#138](https://gitlab.homelabz.eu/homelabz-eu/infra/issues/138)) ([64b16f5](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/64b16f5a0de25497166c8e8bb7703f243cae35d9))
+* **refactor:** change cks-terminal-mgmt-toolz server to internal svc ([c87580b](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/c87580b651621936b5e8e5154fba144837595407))
+* **refactor:** clone cks-terminal-mgmt on toolz ([33dedb0](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/33dedb03287bb8a1eb9cfdf5e3b72f0933854504))
+* **refactor:** move to new harbor ([eddb937](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/eddb9371dcb79ee4cb6c516e227404fbc891c528))
+* **release:** 0.0.2 [skip ci] ([f5cee87](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/f5cee874e06073ab42cd75879fbd6c024059a714))
+* remove K8s Redis, migrate to VM Redis, update docs ([818ccfc](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/818ccfcadf1f02ca1f32ef8e3568fe88ee5bb506))
+* **runner:** expose HARBOR_KEY as env var for docker login ([6208dc4](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/6208dc4a69e888d8cbbececc25647e8af427e158))
+* **sec:** falco ([ceff0e9](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/ceff0e9c7fdc14528ddd82a865634fc5a5020981))
+* **sec:** pre-commit hooks ([7fd5a50](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/7fd5a500db37c0fb60ac9eeb99f7e4e91448de32))
+* **trigger:** build ([32e568f](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/32e568f8539f23517f3e28fabff0810c60509214))
+
+### Bug Fixes
+
+* **argo:** duplicated applications ([cb38731](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/cb387311c86464a520ab8d859c12db84c3f82521))
+* **argo:** remove deprecated secret causing errors on logs ([119fc73](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/119fc73359954e9f0a8fbaadca7b1eeddeeac679))
+* **argo:** shared resources warning ([971691d](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/971691d1322666c67144c47122768c356a8b1e5a))
+* **buildah:** copy binary from image ([b489ef7](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/b489ef7eb822e65b93a9877c3511c99a8c2e5f33))
+* **ephemeral:** ip pool script [skip ci] ([3330f30](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/3330f308ad19aef3154f806cc55d8c208bfbb8d5))
+* **ephemeral:** point to new s3 ([6a9ec06](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/6a9ec06d1189f4741fbc341c784bff8b5103464e))
+* **ephemeral:** point to new vault [skip ci] ([72d1fec](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/72d1fec420c12b503cd3ea7c150bb2c8e3f4cf5a))
+* **ephemeral:** point to new vault [skip ci] ([1e48fa1](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/1e48fa182b39c9b9251802aa97a5d8edc08666df))
+* **ephemeral:** point to new vault [skip ci] ([880a0f3](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/880a0f392e74c12de06732a6bf3001ff77ba499f))
+* **ephemeral:** update vault token [skip ci] ([e3ba42c](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/e3ba42c6e58f25f6ac0403f1d6a8373ef0afdd34))
+* **gitlab-runner:** restore envFrom to inject all cluster-secrets ([a169f59](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/a169f5993a7218ceb65ff3b02485f0042315bfd3))
+* **gitlab:** set GL_TOKEN for semantic-release ([cc58c3d](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/cc58c3d294ebbe4f40cce9e589fe76cbcb0b6b7c))
+* **gitlab:** set GL_TOKEN in script from runtime env var ([b6556e2](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/b6556e22eef40952362e2f78a3278e22df594ee7))
+* **gitlab:** update .gitlab-ci.yml with opentofu pipeline ([ff60ba3](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/ff60ba39ddf84a206585990886a73ad9f01f5365))
+* **gitlab:** use HARBOR_KEY for docker login in build job ([99f8e99](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/99f8e995fa802a2abe37c117e26b3c283223cd75))
+* **postgres:** add pgvector ([4e951e0](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/4e951e08160b69c571ff66a1529328450adb327b))
+* **runner:** mount kubeconfig from cluster-secrets instead of missing kubeconfig secret ([e7d0215](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/e7d021561d7c6c299f897e0c1ca66cfb86bfb994))
+* **sec:** add kaniko and buildah ([ea7109a](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/ea7109a2c6828756fccef7f0e53a3e85ad27efe0))
+
+### Tests
+
+* **build:** buildkit ([#137](https://gitlab.homelabz.eu/homelabz-eu/infra/issues/137)) ([af656f8](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/af656f8c268753ebccde8cc8328f450b9a9d01bf))
+
+### Continuous Integration
+
+* **gitlab:** add missing pipeline jobs for full GitLab CI migration ([a125366](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/a125366dbd94967fd4db0c627a9f601a541a1593))
+
 ## [0.0.2](https://github.com/homelabz-eu/infra/compare/v0.0.1...v0.0.2) (2026-03-14)
 
 ### Tasks
