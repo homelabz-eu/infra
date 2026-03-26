@@ -22,7 +22,7 @@ runners:
             containers:
               - name: build
                 env:
-                  - name: HARBOR_PASSWORD
+                  - name: HARBOR_KEY
                     valueFrom:
                       secretKeyRef:
                         name: cluster-secrets
