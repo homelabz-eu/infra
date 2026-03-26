@@ -404,9 +404,8 @@ release:
   tags:
     - k8s-gitlab-runner
   image: node:lts
-  variables:
-    GL_TOKEN: ${GITLAB_PAT}
   script:
+    - export GL_TOKEN="$GITLAB_PAT"
     - npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/gitlab conventional-changelog-conventionalcommits
     - npx semantic-release
   rules:
