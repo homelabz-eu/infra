@@ -35,7 +35,7 @@ Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platfor
 |----------|----------|---------|---------|
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | OpenTofu validate/plan/apply with cluster change detection | MR / Merge to main |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Ansible provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
-| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Security scanning (Trivy, TruffleHog), conventional commits | MR |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Security scanning (TruffleHog), conventional commits | MR |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Docker image builds for changed Dockerfiles | Merge to main |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Semantic release | Merge to main |
 
