@@ -21,12 +21,10 @@ runners:
           patch = '''
             containers:
               - name: build
-                env:
-                  - name: HARBOR_KEY
-                    valueFrom:
-                      secretKeyRef:
-                        name: cluster-secrets
-                        key: HARBOR_KEY
+                envFrom:
+                  - secretRef:
+                      name: cluster-secrets
+                      optional: true
                 volumeMounts:
                   - name: cluster-secrets-volume
                     mountPath: "/tmp/kubeconfig"
