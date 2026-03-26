@@ -8,7 +8,7 @@ variable "vault_addr" {
 variable "VAULT_TOKEN" {}
 
 variable "sops_age_key" {
-  description = "Content of the SOPS age private key for CI/CD runners"
+  description = "SOPS age private key for CI/CD runners"
   type        = string
   sensitive   = true
   default     = ""
