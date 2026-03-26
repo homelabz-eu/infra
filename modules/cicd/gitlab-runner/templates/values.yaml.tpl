@@ -21,19 +21,21 @@ runners:
           patch = '''
             containers:
               - name: build
-                env:
-                  - name: HARBOR_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        name: cluster-secrets
-                        key: HARBOR_KEY
+                envFrom:
+                  - secretRef:
+                      name: cluster-secrets
+                      optional: true
                 volumeMounts:
                   - name: cluster-secrets-volume
                     mountPath: "/tmp/kubeconfig"
-                    subPath: KUBECONFIG
+                    subPath: kubeconfig
             volumes:
               - name: cluster-secrets-volume
                 secret:
                   secretName: cluster-secrets
+                  optional: true
+                  items:
+                    - key: KUBECONFIG
+                      path: kubeconfig
           '''
           patch_type = "strategic"

@@ -19,6 +19,8 @@
       - registry
       - teleport-backend
       - teleport-audit
+      - open-webui
+      - paperless
 
   handlers:
     - name: restart postgresql

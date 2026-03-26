@@ -1,5 +1,6 @@
 variable "kubeconfig_path" {
-  default = "~/.kube/config"
+  description = "Path to the kubeconfig file"
+  default     = "~/.kube/config"
 }
 variable "vault_addr" {
   default = "https://vault.toolz.homelabz.eu"

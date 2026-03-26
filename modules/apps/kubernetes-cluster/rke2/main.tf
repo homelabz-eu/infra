@@ -125,6 +125,105 @@ module "cluster_templates" {
 }
 
 locals {
+  extra_wk_clusters = {
+    for name, cluster in local.clusters : name => cluster if cluster.extra_wk_enabled
+  }
+}
+
+module "extra_worker_templates" {
+  source = "../../../base/values-template"
+
+  for_each = local.extra_wk_clusters
+
+  template_files = [
+    {
+      path = "${path.module}/../core/templates/wk-proxmoxmachinetemplate.yaml.tpl"
+      vars = {
+        cluster_name           = each.value.name
+        namespace              = each.value.name
+        worker_template_name   = "${each.value.name}-extra-worker-template"
+        wk_disk_size           = each.value.extra_wk_disk_size
+        wk_memory              = each.value.extra_wk_memory
+        wk_cores               = each.value.extra_wk_cores
+        wk_sockets             = each.value.extra_wk_sockets
+        source_node            = each.value.source_node
+        template_id            = each.value.template_id
+        network_bridge         = each.value.network_bridge
+        network_model          = each.value.network_model
+        disk_format            = each.value.disk_format
+        skip_cloud_init_status = each.value.skip_cloud_init_status
+        skip_qemu_guest_agent  = each.value.skip_qemu_guest_agent
+        provider_id_injection  = each.value.provider_id_injection
+      }
+    },
+    {
+      path = "${path.module}/templates/extra-worker-config.yaml.tpl"
+      vars = {
+        cluster_name            = each.value.name
+        namespace               = each.value.name
+        worker_rke2_config_name = "${each.value.name}-extra-worker-config"
+        ssh_authorized_keys     = join("\n", formatlist("    - %s", var.ssh_authorized_keys))
+        kubernetes_version      = each.value.kubernetes_version
+        node_taints_yaml        = length(each.value.extra_wk_taints) > 0 ? join("\n", concat(["        nodeTaints:"], [for t in each.value.extra_wk_taints : "          - \"${t}\""])) : ""
+        node_labels_yaml        = length(each.value.extra_wk_labels) > 0 ? join("\n", concat(["        nodeLabels:"], [for k, v in each.value.extra_wk_labels : "          - \"${k}=${v}\""])) : ""
+      }
+    },
+    {
+      path = "${path.module}/templates/machinedeployment.yaml.tpl"
+      vars = {
+        cluster_name            = each.value.name
+        namespace               = each.value.name
+        worker_deployment_name  = "${each.value.name}-extra-workers"
+        worker_rke2_config_name = "${each.value.name}-extra-worker-config"
+        worker_template_name    = "${each.value.name}-extra-worker-template"
+        wk_replicas             = each.value.extra_wk_replicas
+        kubernetes_version      = each.value.kubernetes_version
+        rke2_version            = each.value.rke2_version
+        autoscaler_enabled      = false
+        autoscaler_min          = 0
+        autoscaler_max          = 0
+      }
+    }
+  ]
+}
+
+locals {
+  extra_wk_manifests = {
+    for cluster_name, cluster_config in local.extra_wk_clusters : cluster_name => {
+      for template_content in module.extra_worker_templates[cluster_name].rendered_values :
+      "${yamldecode(template_content).kind}-${yamldecode(template_content).metadata.name}" => yamldecode(template_content)
+    }
+  }
+}
+
+resource "kubernetes_manifest" "extra_worker_machine_template" {
+  for_each = local.extra_wk_clusters
+
+  manifest = local.extra_wk_manifests[each.key]["ProxmoxMachineTemplate-${each.value.name}-extra-worker-template"]
+
+  depends_on = [var.core_module_namespaces]
+}
+
+resource "kubernetes_manifest" "extra_worker_config_template" {
+  for_each = local.extra_wk_clusters
+
+  manifest = local.extra_wk_manifests[each.key]["RKE2ConfigTemplate-${each.value.name}-extra-worker-config"]
+
+  depends_on = [var.core_module_namespaces]
+}
+
+resource "kubernetes_manifest" "extra_worker_machine_deployment" {
+  for_each = local.extra_wk_clusters
+
+  manifest = local.extra_wk_manifests[each.key]["MachineDeployment-${each.value.name}-extra-workers"]
+
+  field_manager {
+    force_conflicts = true
+  }
+  depends_on = [var.core_module_namespaces]
+}
+
+locals {
   cluster_manifests = {
     for cluster_name, cluster_config in local.clusters : cluster_name => {
       for template_content in module.cluster_templates[cluster_name].rendered_values :

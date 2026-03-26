@@ -23,9 +23,9 @@ variable "workload" {
       "vault",
       "argocd",
       "teleport-agent",
-      "falco",
       "kubevirt",
       "longhorn",
+      "ollama",
     ]
     observability = [
       "externaldns",
@@ -38,7 +38,9 @@ variable "workload" {
       "cert_manager",
       "external_secrets",
       "observability-box",
-      "immich"
+      "immich",
+      "kiwix",
+      "paperless_ngx"
     ]
     prod = [
       "local-path-provisioner",
@@ -59,28 +61,15 @@ variable "config" {
   description = "Map of providers with configuration per workspace."
   default = {
     clustermgmt = {
-      kubernetes_context     = "clustermgmt"
-      crds_installed         = true
-      istio_CRDs             = false
-      argocd_ingress_class   = "traefik"
-      argocd_ingress_enabled = true
-      argocd_domain          = "tools.argocd.homelabz.eu"
+      kubernetes_context = "clustermgmt"
+      crds_installed     = true
+      istio_CRDs         = false
       teleport = {
         apps = {
           "harbor" = "http://harbor-portal.harbor.svc.cluster.local"
           "vault"  = "http://vault.vault.svc.cluster.local:8200"
         }
         roles = "kube,app"
-      }
-      harbor = {
-        harbor_domain      = "registry.toolz.homelabz.eu"
-        ingress_class_name = "traefik"
-        ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.homelabz.eu"
-          "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-          "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
-          "nginx.org/client-max-body-size"              = "0"
-        }
       }
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
@@ -123,10 +112,6 @@ variable "config" {
       cluster_autoscaler_max_provision_time       = "15m"
       cluster_autoscaler_replicas                 = 1
 
-      authentik = {
-        domain   = "auth.homelabz.eu"
-        redis_db = 1
-      }
       kubernetes-cluster = [
         {
           cluster_type              = "kubeadm"
@@ -169,7 +154,7 @@ variable "config" {
           rke2_version              = "v1.33.1+rke2r1"
           control_plane_endpoint_ip = "192.168.1.30"
           ip_range_start            = "192.168.1.31"
-          ip_range_end              = "192.168.1.39"
+          ip_range_end              = "192.168.1.49"
           gateway                   = "192.168.1.1"
           prefix                    = 24
           dns_servers               = ["192.168.1.3", "8.8.4.4"]
@@ -192,6 +177,14 @@ variable "config" {
           autoscaler_enabled = true
           autoscaler_min     = 1
           autoscaler_max     = 5
+
+          extra_wk_enabled   = true
+          extra_wk_replicas  = 1
+          extra_wk_cores     = 36
+          extra_wk_memory    = 16384
+          extra_wk_disk_size = 100
+          extra_wk_taints    = ["dedicated=ollama:NoSchedule"]
+          extra_wk_labels    = { "dedicated" = "ollama" }
         },
         # {
         #   cluster_type              = "talos"
@@ -317,37 +310,6 @@ variable "config" {
         "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.homelabz.eu"
         "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
       }
-      redis = {
-        ingress_enabled    = false
-        ingress_class_name = "nginx"
-        ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"         = "redis.toolz.homelabz.eu"
-          "nginx.ingress.kubernetes.io/proxy-body-size"       = "10m"
-          "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
-          "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
-          "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
-          "nginx.ingress.kubernetes.io/service-upstream"      = "true"
-        }
-        ingress_host = "redis.toolz.homelabz.eu"
-        service_type = "LoadBalancer"
-        service_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname" = "redis.toolz.homelabz.eu"
-        }
-      }
-      harbor = {
-        harbor_domain           = "registry.toolz.homelabz.eu"
-        ingress_class_name      = "nginx"
-        registry_existing_claim = "harbor-registry-migration"
-        ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.homelabz.eu"
-          "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-          "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
-          "nginx.org/client-max-body-size"              = "0"
-        }
-      }
-      github_runner = {
-        registry_server = "registry.homelabz.eu"
-      }
       vault_ingress_host       = "vault.toolz.homelabz.eu"
       argocd_ingress_class     = "nginx"
       argocd_ingress_enabled   = true
@@ -400,13 +362,15 @@ variable "config" {
       vault_memory_limit   = "600Mi"
       vault_cpu_limit      = "300m"
 
-      redis_memory_request = "64Mi"
-      redis_cpu_request    = "50m"
-      redis_memory_limit   = "128Mi"
-      redis_cpu_limit      = "200m"
-
       prometheus_memory_request = "256Mi"
       prometheus_memory_limit   = "512Mi"
+
+      ollama = {
+        ingress_host       = "ollama.toolz.homelabz.eu"
+        webui_ingress_host = "chat.toolz.homelabz.eu"
+        kiwix_url          = "https://wikipedia.homelabz.eu"
+        paperless_url      = "https://paperless.homelabz.eu"
+      }
     }
     observability = {
       kubernetes_context = "k8s-observability"
@@ -415,6 +379,12 @@ variable "config" {
     home = {
       kubernetes_context = "home"
       crds_installed     = true
+      kiwix = {
+        ingress_host = "wikipedia.homelabz.eu"
+      }
+      paperless_ngx = {
+        ingress_host = "paperless.homelabz.eu"
+      }
     }
     prod = {
       kubernetes_context     = "prod"

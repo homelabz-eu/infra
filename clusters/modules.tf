@@ -510,6 +510,26 @@ module "immich" {
 
 }
 
+module "kiwix" {
+  count  = contains(local.workload, "kiwix") ? 1 : 0
+  source = "../modules/apps/kiwix"
+
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].kiwix.ingress_host, "")
+}
+
+module "paperless_ngx" {
+  count  = contains(local.workload, "paperless_ngx") ? 1 : 0
+  source = "../modules/apps/paperless-ngx"
+
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].paperless_ngx.ingress_host, "")
+  db_pass         = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+  redis_url       = "redis://:${local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]}@192.168.1.100:6379/1"
+  admin_password  = try(local.secrets_json["kv/cluster-secret-store/secrets/PAPERLESS"]["PAPERLESS_ADMIN_PASSWORD"], "")
+  secret_key      = try(local.secrets_json["kv/cluster-secret-store/secrets/PAPERLESS"]["PAPERLESS_SECRET_KEY"], "")
+}
+
 module "kubevirt_operator" {
   count  = contains(local.workload, "kubevirt") ? 1 : 0
   source = "../modules/apps/kubevirt-operator"
@@ -777,4 +797,37 @@ module "authentik" {
 
   authentik_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_SECRET_KEY"]
   admin_password       = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_ADMIN_PASSWORD"]
+}
+
+module "ollama" {
+  count  = contains(local.workload, "ollama") ? 1 : 0
+  source = "../modules/apps/ollama"
+
+  ingress_enabled    = true
+  ingress_host       = try(var.config[terraform.workspace].ollama.ingress_host, "")
+  ingress_class_name = try(var.config[terraform.workspace].argocd_ingress_class, "nginx")
+  storage_class      = try(var.config[terraform.workspace].vault_storage_class, "longhorn")
+
+  tolerations = [
+    {
+      key      = "dedicated"
+      operator = "Equal"
+      value    = "ollama"
+      effect   = "NoSchedule"
+    }
+  ]
+  node_selector = {
+    "dedicated" = "ollama"
+  }
+
+  webui_enabled         = true
+  webui_ingress_enabled = true
+  webui_ingress_host    = try(var.config[terraform.workspace].ollama.webui_ingress_host, "")
+
+  pgvector_db_url = "postgresql://postgres:${local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]}@192.168.1.100:5432/open-webui"
+
+  kiwix_url = try(var.config[terraform.workspace].ollama.kiwix_url, "")
+
+  paperless_url       = try(var.config[terraform.workspace].ollama.paperless_url, "")
+  paperless_api_token = try(local.secrets_json["kv/cluster-secret-store/secrets/PAPERLESS"]["PAPERLESS_API_TOKEN"], "")
 }

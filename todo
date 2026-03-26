@@ -1,12 +1,7 @@
-* fix makefile to remove plan after applying
-* build remote images to harbor to not loose like bitnami event
 * when budget allows, buy new node and install OpenStack Sunbeam (also known as MicroStack)
 * create pipeline and playbook to CRUD proxmox vm templates to cluster-api using image builder
-* migrate teleport and observability to cluster-api
-* minimize runners images
-* enable pod to pod encryption
-* prevent pods escalation
-* rootless k3s on tools
-* add cool badges https://github.com/kashalls/kromgo
+
 * wireguard
 * makefile function to clean tofu state (tofu state rm all)
+
+* integrate monitoring into vms

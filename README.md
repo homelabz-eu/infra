@@ -29,15 +29,17 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 **Automated CI/CD Pipelines**
 
-Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platform, with GitLab runners on the toolz K8s cluster. Reusable CI templates are centralized in the [pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines) repository. GitHub Actions remain available during transition.
+Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platform, with GitLab runners on the toolz K8s cluster. Reusable CI templates are centralized in the [pipelines](https://gitlab.homelabz.eu/homelabz-eu/pipelines) repository.
 
 | Pipeline | Platform | Purpose | Trigger |
 |----------|----------|---------|---------|
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | OpenTofu validate/plan/apply with cluster change detection | MR / Merge to main |
-| [opentofu.yml](.github/workflows/opentofu.yml) | GitHub | OpenTofu workflow (legacy, transition) | PR/Merge to main |
-| [ansible.yml](.github/workflows/ansible.yml) | GitHub | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Ansible provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Security scanning (Trivy, TruffleHog), conventional commits | MR |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Docker image builds for changed Dockerfiles | Merge to main |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Semantic release | Merge to main |
 
-**OpenTofu Workflow Deep Dive** ([.gitlab-ci.yml](.gitlab-ci.yml) / [opentofu.yml](.github/workflows/opentofu.yml)):
+**OpenTofu Workflow Deep Dive** ([.gitlab-ci.yml](.gitlab-ci.yml)):
 
 **Plan Phase (on PR)**:
 1. Detects changes in `clusters/**` and `secrets/**`
@@ -202,7 +204,7 @@ Edge collectors on all workload clusters:
 - **DNS**: Pi-hole for internal resolution (`pr-<number>-<repo>.ephemeral.homelabz.eu`)
 - **Capacity**: 5 concurrent ephemeral clusters maximum
 
-**Workflow Lifecycle** (example: [cks-backend ephemeral.yml](https://gitlab.homelabz.eu/homelabz-eu/cks-backend/-/blob/main/.github/workflows/ephemeral.yml)):
+**Workflow Lifecycle** (example: [cks-backend .gitlab-ci.yml](https://gitlab.homelabz.eu/homelabz-eu/cks-backend/-/blob/main/.gitlab-ci.yml)):
 
 1. **PR Opened**:
    - Check cluster existence via Cluster API
@@ -309,6 +311,12 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 - HashiCorp Vault for centralized secrets
 - Harbor container registry with upstream replication (Docker Hub, GHCR, registry.k8s.io, Quay.io, and more)
 - Teleport agent for secure access
+- Ollama LLM inference server (CPU-only, dedicated worker node) with qwen3.5:2b + nomic-embed-text models
+- Open WebUI chat interface with RAG (pgvecto.rs on PostgreSQL VM), web search (SearXNG), and MCP tool integration (MCPO proxy)
+- SearXNG metasearch engine configured as local-only (all internet engines disabled, searches Kiwix and Paperless-ngx)
+- Kiwix Serve hosting offline knowledge library (home cluster): full English Wikipedia, 8 Stack Exchange sites (Ask Ubuntu, Server Fault, Super User, Unix, Electronics, Physics, Chemistry, Biology, DIY, Medical Sciences), Wikibooks, Wikivoyage, and iFixit (~75GB ZIM files)
+- Paperless-ngx document management system (home cluster): OCR-powered indexing of ~8,000 technical PDFs with full-text search API, integrated with SearXNG as json_engine
+- MCPO (MCP-to-OpenAPI proxy) exposing fetch and memory MCP servers
 
 Configuration is workspace-specific via `workload` variable - modules only deploy when listed in workspace's workload array.
 
@@ -447,7 +455,7 @@ infra/
 │       ├── Security: vault, teleport-agent, authentik, falco
 │       ├── Storage: longhorn, local-path-provisioner
 │       ├── Virtualization: kubevirt, kubevirt-operator
-│       └── Other: harbor, harbor-replication, immich, registry, cluster-autoscaler, oracle-backup
+│       └── Other: harbor, harbor-replication, immich, kiwix, paperless-ngx, registry, cluster-autoscaler, oracle-backup
 ├── init/
 │   ├── vms/             # YAML VM definitions for declarative provisioning (legacy)
 │   ├── playbooks/       # Ansible configuration playbooks (legacy K3s clusters)
@@ -461,7 +469,8 @@ infra/
 ├── scripts/
 │   ├── helm-mirror.sh   # Mirror Helm charts to Harbor as OCI artifacts
 │   └── helm-charts.yaml # Helm chart inventory for mirroring
-├── .github/workflows/   # CI/CD automation pipelines
+├── .gitlab-ci.yml       # GitLab CI/CD pipeline
+├── .github/workflows/   # GitHub Actions (disabled, kept as reference)
 ├── Makefile             # Development commands (plan, apply, init, fmt, validate)
 └── docs/                # Technical documentation
 ```
@@ -480,10 +489,10 @@ infra/
 | Cluster | Type | Provisioning | Purpose | Node(s) | Key Workloads |
 |---------|------|--------------|---------|---------|---------------|
 | clustermgmt | K3s | Legacy Ansible | Cluster API management cluster (management plane only) | k8s-tools (single node, NODE02) | Cluster API operator, Cluster Autoscaler |
-| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 4 workers (NODE03) | CloudNativePG, NATS, GitLab CI runners, Vault, Harbor, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
+| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 4 workers (NODE03) | CloudNativePG, NATS, GitLab CI runners, Vault, Harbor, ArgoCD, Falco, KubeVirt, Longhorn, Ollama, cks-terminal-mgmt |
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
 | ephemeral | Talos | Cluster API | Per-PR environments | Dynamic | Created/destroyed per pull request |
-| home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
+| home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, Kiwix (offline knowledge library: Wikipedia + Stack Exchange + Wikibooks + Wikivoyage + iFixit), External Secrets |
 | observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
 
 ## Technology Stack
@@ -515,10 +524,20 @@ infra/
 - OpenTelemetry Collector v0.33.0 (telemetry ingestion)
 - Fluent Bit v0.48.9 (log forwarding)
 
+**AI/LLM**
+- Ollama (CPU-only inference on dedicated 36-core worker node)
+- Open WebUI (chat interface with RAG, web search, MCP tools, Functions)
+- SearXNG (local-only metasearch engine, all internet engines disabled, queries Kiwix and Paperless-ngx)
+- Kiwix Serve (offline knowledge library on home cluster: Wikipedia, Stack Exchange, Wikibooks, Wikivoyage, iFixit — 75GB across 14 ZIM files)
+- Paperless-ngx (OCR document management on home cluster: full-text search of ~8,000 technical PDFs via REST API)
+- MCPO (MCP-to-OpenAPI proxy for fetch/memory servers)
+- pgvecto.rs (vector embeddings on PostgreSQL VM)
+- nomic-embed-text (embedding model via Ollama)
+
 **Data Services**
 - CloudNativePG operator (PostgreSQL 15+ with pgvector, automated backups, managed roles/databases)
 - NATS with JetStream (messaging)
-- PostgreSQL + Redis VM (`postgres.homelabz.eu` / `redis.homelabz.eu`, 192.168.1.100)
+- PostgreSQL + Redis VM (`postgres.homelabz.eu` / `redis.homelabz.eu`, 192.168.1.100, pgvecto.rs for vector search)
 - MinIO (S3-compatible object storage, `s3.homelabz.eu`, 192.168.1.103)
 
 **CI/CD**

@@ -51,6 +51,15 @@ variable "clusters" {
     registration_method  = optional(string, "address")
     registration_address = optional(string, "")
     kube_vip_interface   = optional(string, "ens18")
+
+    extra_wk_enabled   = optional(bool, false)
+    extra_wk_replicas  = optional(number, 1)
+    extra_wk_cores     = optional(number, 2)
+    extra_wk_memory    = optional(number, 2048)
+    extra_wk_disk_size = optional(number, 20)
+    extra_wk_sockets   = optional(number, 1)
+    extra_wk_taints    = optional(list(string), [])
+    extra_wk_labels    = optional(map(string), {})
   }))
 }
 
