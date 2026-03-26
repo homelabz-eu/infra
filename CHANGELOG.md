@@ -1,3 +1,9 @@
+## [1.11.8](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.7...v1.11.8) (2026-03-26)
+
+### Documentation
+
+* fix README security scanning tools list ([fd3c95a](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/fd3c95a439040f7eaeca30ae07f1ad5ae8b76481))
+
 ## [1.11.7](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.6...v1.11.7) (2026-03-26)
 
 ### Tasks
