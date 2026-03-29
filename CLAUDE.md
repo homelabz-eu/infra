@@ -86,7 +86,7 @@ Each workspace represents an environment. Configuration in `clusters/variables.t
 variable "workload" {
   default = {
     prod = ["externaldns", "cert_manager", "istio", "argocd", ...]
-    toolz = ["redis", "vault", "github_runner", "argocd", ...]
+    toolz = ["redis", "vault", "gitlab_runner", "argocd", ...]
   }
 }
 
@@ -111,8 +111,23 @@ variable "config" {
 5. Cluster available immediately to OpenTofu and CI/CD
 
 **Key Files:**
-- `.github/workflows/opentofu.yml` - Main deployment pipeline
+- `.gitlab-ci.yml` - Main deployment pipeline
 - `modules/apps/kubernetes-cluster/` - Polymorphic cluster module (talos, kubeadm, rke2, k3s)
+
+### Local Harbor Registry for Charts and Images
+
+All Helm charts are served from the local Harbor registry as OCI artifacts. Container images are replicated from 9 upstream registries.
+
+**Helm charts:** `oci://registry.homelabz.eu/helm-charts` — all modules reference this instead of upstream repos. Charts mirrored via `scripts/helm-mirror.sh` from `scripts/helm-charts.yaml`.
+
+**Container images:** Harbor mirror projects map to upstream registries:
+- `registry.homelabz.eu/mirror-dockerhub/` ← Docker Hub
+- `registry.homelabz.eu/mirror-ghcr/` ← ghcr.io
+- `registry.homelabz.eu/mirror-k8s/` ← registry.k8s.io
+- `registry.homelabz.eu/mirror-quay/` ← quay.io
+- (also: mirror-fluentbit, mirror-gcr, mirror-ecr-public, mirror-external-secrets, mirror-gitlab)
+
+**Adding a new chart:** Add to `scripts/helm-charts.yaml`, run `./scripts/helm-mirror.sh`, then use `oci://registry.homelabz.eu/helm-charts` as the repository in the module.
 
 ### Secrets Lifecycle
 
@@ -200,8 +215,7 @@ cd clusters && python3 load_secrets.py
 - `modules/apps/` - Applications (argocd, vault, postgres, istio, cert_manager, etc.)
 
 **CI/CD:**
-- `.github/workflows/opentofu.yml` - Main deployment
-- `.github/workflows/ansible.yml` - Legacy K3s maintenance
+- `.gitlab-ci.yml` - Main deployment pipeline (OpenTofu, Ansible, Docker builds, releases)
 
 **Secrets:**
 - `secrets/` - SOPS-encrypted secrets (all environments)

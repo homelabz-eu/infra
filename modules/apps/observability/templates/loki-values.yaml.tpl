@@ -1,3 +1,6 @@
+global:
+  image:
+    registry: registry.homelabz.eu/mirror-dockerhub
 deploymentMode: ${deployment_mode}
 minio:
   enabled: true

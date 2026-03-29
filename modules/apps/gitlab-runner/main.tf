@@ -43,7 +43,7 @@ module "helm" {
   release_name     = var.release_name
   namespace        = module.namespace.name
   chart            = "gitlab-runner"
-  repository       = "https://charts.gitlab.io"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = var.timeout
   create_namespace = false

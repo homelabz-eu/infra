@@ -370,6 +370,13 @@ variable "config" {
         webui_ingress_host = "chat.toolz.homelabz.eu"
         kiwix_url          = "https://wikipedia.homelabz.eu"
         paperless_url      = "https://paperless.homelabz.eu"
+        extra_ollama_urls  = ["http://192.168.1.99:11434"]
+        openai_api_endpoints = [
+          {
+            url     = "http://192.168.1.99:1234/v1"
+            api_key = "lm-studio" #pragma: allowlist secret
+          }
+        ]
       }
     }
     observability = {

@@ -1,4 +1,6 @@
 controller:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/nginx/nginx-ingress
   config:
     use-forwarded-headers: "true"
     enable-grpc: "true"

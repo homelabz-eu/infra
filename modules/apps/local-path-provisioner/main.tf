@@ -18,7 +18,7 @@ module "helm" {
   release_name     = "local-path-provisioner"
   namespace        = module.namespace.name
   chart            = "local-path-provisioner"
-  repository       = "https://charts.containeroo.ch"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = 300
   create_namespace = false
@@ -29,6 +29,9 @@ module "helm" {
         - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
           paths:
             - /var/lib/local-path-provisioner
+
+      privateRegistry:
+        registryUrl: registry.homelabz.eu/mirror-dockerhub
 
       storageClass:
         name: ${var.storage_class_name}

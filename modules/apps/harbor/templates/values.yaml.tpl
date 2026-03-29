@@ -64,7 +64,12 @@ redis:
     addr: "${external_redis_host}:${external_redis_port}"
     password: "${external_redis_password}"
     databaseIndex: ${external_redis_database_index}
+nginx:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/goharbor/nginx-photon
 core:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/goharbor/harbor-core
   replicas: 1
   resources:
     limits:
@@ -77,6 +82,8 @@ core:
     - name: REGISTRY_HTTP_CLIENT_TIMEOUT
       value: "600"
 jobservice:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/goharbor/harbor-jobservice
   replicas: 1
   resources:
     limits:
@@ -90,6 +97,12 @@ jobservice:
       value: "600"
 
 registry:
+  registry:
+    image:
+      repository: registry.homelabz.eu/mirror-dockerhub/goharbor/registry-photon
+  controller:
+    image:
+      repository: registry.homelabz.eu/mirror-dockerhub/goharbor/harbor-registryctl
   replicas: 1
   resources:
     limits:
@@ -100,6 +113,8 @@ registry:
       memory: ${resources_requests.registry.memory}
 
 portal:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/goharbor/harbor-portal
   replicas: 1
   resources:
     limits:
@@ -113,6 +128,8 @@ notary:
 chartmuseum:
   enabled: false
 trivy:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/goharbor/trivy-adapter-photon
   enabled: true
   resources:
     limits:
@@ -121,6 +138,9 @@ trivy:
     requests:
       cpu: ${resources_requests.portal.cpu}
       memory: ${resources_requests.portal.memory}
+exporter:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/goharbor/harbor-exporter
 log:
   level: info
   audit:

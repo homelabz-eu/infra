@@ -18,7 +18,7 @@ variable "chart" {
   default = "immich"
 }
 variable "repository" {
-  default = "https://immich-app.github.io/immich-charts"
+  default = "oci://registry.homelabz.eu/helm-charts"
 }
 variable "chart_version" {
   default = "0.10.3"

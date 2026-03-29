@@ -1,6 +1,7 @@
 cloudProvider: clusterapi
 
 image:
+  repository: registry.homelabz.eu/mirror-k8s/autoscaling/cluster-autoscaler
   tag: ${image_tag}
 
 autoDiscovery:

@@ -8,6 +8,7 @@ spec:
   version: ${rke2_version}
   serverConfig:
     cni: calico
+    systemDefaultRegistry: registry.homelabz.eu/mirror-dockerhub
   agentConfig:
     additionalUserData:
       data:

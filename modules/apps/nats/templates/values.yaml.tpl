@@ -1,3 +1,6 @@
+global:
+  image:
+    registry: registry.homelabz.eu/mirror-dockerhub
 ## NATS Helm chart values
 
 # Cluster configuration
@@ -49,7 +52,7 @@ nats:
   exporter:
     enabled: true
     port: ${prometheus_port}
-    image: natsio/prometheus-nats-exporter:latest
+    image: registry.homelabz.eu/mirror-dockerhub/natsio/prometheus-nats-exporter:latest
     serviceMonitor:
       enabled: false  # Set to true if you have Prometheus Operator
   %{endif}
@@ -83,7 +86,7 @@ jetstream:
 # NATS Box (NATS client tooling)
 natsBox:
   enabled: true
-  image: natsio/nats-box:latest
+  image: registry.homelabz.eu/mirror-dockerhub/natsio/nats-box:latest
 
 %{if prometheus_enabled}
 # Prometheus configuration

@@ -14,6 +14,8 @@ authentik:
     db: ${redis_db}
 
 global:
+  image:
+    repository: registry.homelabz.eu/mirror-ghcr/goauthentik/server
   env:
     - name: AUTHENTIK_POSTGRESQL__PASSWORD
       valueFrom:

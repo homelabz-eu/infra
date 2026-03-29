@@ -1,5 +1,7 @@
 global:
   domain: ${domain}
+  image:
+    repository: registry.homelabz.eu/mirror-quay/argoproj/argocd
 
 configs:
   params:
@@ -70,9 +72,13 @@ controller:
 
 redis:
   enabled: true
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/library/redis
 
 dex:
   enabled: ${enable_dex}
+  image:
+    repository: registry.homelabz.eu/mirror-ghcr/dexidp/dex
 
 notifications:
   enabled: ${enable_notifications}

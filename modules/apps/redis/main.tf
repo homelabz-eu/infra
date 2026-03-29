@@ -63,7 +63,7 @@ module "helm" {
   release_name     = var.release_name
   namespace        = module.namespace.name
   chart            = "redis"
-  repository       = "https://charts.bitnami.com/bitnami"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = var.timeout
   create_namespace = false

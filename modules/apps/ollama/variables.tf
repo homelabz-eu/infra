@@ -123,3 +123,17 @@ variable "paperless_api_token" {
   sensitive = true
   default   = ""
 }
+
+variable "extra_ollama_urls" {
+  type    = list(string)
+  default = []
+}
+
+variable "openai_api_endpoints" {
+  type = list(object({
+    url     = string
+    api_key = string
+  }))
+  default   = []
+  sensitive = true
+}

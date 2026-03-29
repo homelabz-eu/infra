@@ -3,7 +3,7 @@ controllers:
     containers:
       main:
         image:
-          repository: ghcr.io/immich-app/immich-server
+          repository: registry.homelabz.eu/mirror-ghcr/immich-app/immich-server
           pullPolicy: IfNotPresent
         env:
           REDIS_HOSTNAME: ${redis}
@@ -51,6 +51,12 @@ server:
             - "${immich_domain}"
 
 machine-learning:
+  controllers:
+    main:
+      containers:
+        main:
+          image:
+            repository: registry.homelabz.eu/mirror-ghcr/immich-app/immich-machine-learning
   persistence:
     cache:
       enabled: true

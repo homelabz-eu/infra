@@ -1,3 +1,6 @@
+image:
+  registry: registry.homelabz.eu/mirror-gitlab
+  image: gitlab-org/gitlab-runner
 concurrent: ${concurrent}
 checkInterval: ${check_interval}
 runnerToken: "${registration_token}"

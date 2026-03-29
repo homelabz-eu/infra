@@ -31,7 +31,7 @@ module "helm_release" {
   release_name     = "capi-operator"
   namespace        = module.namespace.name
   chart            = "cluster-api-operator"
-  repository       = "https://kubernetes-sigs.github.io/cluster-api-operator"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.operator_version
   timeout          = 600
   create_namespace = false

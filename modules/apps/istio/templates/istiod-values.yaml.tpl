@@ -1,6 +1,7 @@
 # Istiod (Istio Control Plane) Configuration
 
 global:
+  hub: registry.homelabz.eu/mirror-dockerhub/istio
   # Logging settings
   logging:
     level: "default:info"

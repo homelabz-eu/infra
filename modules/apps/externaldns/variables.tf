@@ -25,7 +25,7 @@ variable "replicas" {
 variable "image" {
   description = "ExternalDNS container image"
   type        = string
-  default     = "registry.k8s.io/external-dns/external-dns:v0.14.1"
+  default     = "registry.homelabz.eu/mirror-k8s/external-dns/external-dns:v0.14.1"
 }
 
 variable "pihole_secret_name" {

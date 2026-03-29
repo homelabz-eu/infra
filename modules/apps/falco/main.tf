@@ -34,7 +34,7 @@ module "helm" {
   release_name     = "falco"
   namespace        = module.namespace.name
   create_namespace = false
-  repository       = "https://falcosecurity.github.io/charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart            = "falco"
   chart_version    = var.chart_version
   timeout          = var.timeout

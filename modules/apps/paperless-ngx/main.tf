@@ -11,13 +11,16 @@ module "helm" {
   release_name     = "paperless-ngx"
   namespace        = module.namespace.name
   chart            = "paperless-ngx"
-  repository       = "https://charts.gabe565.com"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = 600
   create_namespace = false
 
   values_files = [
     <<-EOT
+      image:
+        repository: registry.homelabz.eu/mirror-ghcr/paperless-ngx/paperless-ngx
+
       env:
         PAPERLESS_DBENGINE: postgresql
         PAPERLESS_DBHOST: "${var.db_host}"

@@ -5,3 +5,7 @@
 * makefile function to clean tofu state (tofu state rm all)
 
 * integrate monitoring into vms
+
+* integrate qwen-opus running from macbook into our homelabz ecosystem
+
+* integrate openclaw

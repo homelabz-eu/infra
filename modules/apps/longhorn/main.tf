@@ -46,7 +46,7 @@ module "helm" {
   release_name     = "longhorn"
   namespace        = module.namespace.name
   chart            = "longhorn"
-  repository       = "https://charts.longhorn.io"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = var.timeout
   create_namespace = false

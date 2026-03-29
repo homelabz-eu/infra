@@ -1,3 +1,5 @@
+global:
+  imageRegistry: registry.homelabz.eu/mirror-dockerhub
 ## Redis Helm chart values
 architecture: ${architecture}
 

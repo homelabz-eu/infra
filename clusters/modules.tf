@@ -377,11 +377,13 @@ module "harbor_replication" {
     natsio-nats-box                   = { registry_key = "dockerhub", name = "natsio/nats-box", tag = "0.16.0" }
     nats-config-reloader              = { registry_key = "dockerhub", name = "natsio/nats-server-config-reloader", tag = "0.16.1" }
     otel-collector-contrib            = { registry_key = "dockerhub", name = "otel/opentelemetry-collector-contrib", tag = "0.81.0" }
+    otel-collector-contrib-080        = { registry_key = "dockerhub", name = "otel/opentelemetry-collector-contrib", tag = "0.80.0" }
     rancher-local-path-provisioner-28 = { registry_key = "dockerhub", name = "rancher/local-path-provisioner", tag = "v0.0.28" }
     rancher-local-path-provisioner-31 = { registry_key = "dockerhub", name = "rancher/local-path-provisioner", tag = "v0.0.31" }
     rancher-klipper-helm-v094         = { registry_key = "dockerhub", name = "rancher/klipper-helm", tag = "v0.9.4-build20250113" }
     rancher-klipper-helm-v095         = { registry_key = "dockerhub", name = "rancher/klipper-helm", tag = "v0.9.5-build20250306" }
     rancher-klipper-lb                = { registry_key = "dockerhub", name = "rancher/klipper-lb", tag = "v0.4.13" }
+    kubelet-csr-approver              = { registry_key = "dockerhub", name = "postfinance/kubelet-csr-approver", tag = "v1.2.12" }
     rancher-mirrored-coredns-1-12-0   = { registry_key = "dockerhub", name = "rancher/mirrored-coredns-coredns", tag = "1.12.0" }
     rancher-mirrored-coredns-1-12-3   = { registry_key = "dockerhub", name = "rancher/mirrored-coredns-coredns", tag = "1.12.3" }
     rancher-mirrored-traefik-332      = { registry_key = "dockerhub", name = "rancher/mirrored-library-traefik", tag = "3.3.2" }
@@ -414,6 +416,21 @@ module "harbor_replication" {
     longhornio-csi-resizer            = { registry_key = "dockerhub", name = "longhornio/csi-resizer", tag = "v1.13.2" }
     longhornio-csi-snapshotter        = { registry_key = "dockerhub", name = "longhornio/csi-snapshotter", tag = "v8.2.0" }
     longhornio-livenessprobe          = { registry_key = "dockerhub", name = "longhornio/livenessprobe", tag = "v2.15.0" }
+    falco-driver-loader               = { registry_key = "dockerhub", name = "falcosecurity/falco-driver-loader", tag = "0.43.0" }
+    jaegertracing-jaeger-operator     = { registry_key = "dockerhub", name = "jaegertracing/jaeger-operator", tag = "1.61.0" }
+    jaegertracing-all-in-one          = { registry_key = "dockerhub", name = "jaegertracing/all-in-one", tag = "1.61.0" }
+    grafana-loki                      = { registry_key = "dockerhub", name = "grafana/loki", tag = "3.4.2" }
+    grafana-loki-canary               = { registry_key = "dockerhub", name = "grafana/loki-canary", tag = "3.4.2" }
+    grafana-grafana                   = { registry_key = "dockerhub", name = "grafana/grafana", tag = "12.2.1" }
+    nginx-nginx-ingress               = { registry_key = "dockerhub", name = "nginx/nginx-ingress", tag = "3.5.0" }
+    ollama-ollama                     = { registry_key = "dockerhub", name = "ollama/ollama", tag = "0.18.2" }
+    searxng-searxng                   = { registry_key = "dockerhub", name = "searxng/searxng", tag = "latest" }
+    natsio-prometheus-nats-exporter   = { registry_key = "dockerhub", name = "natsio/prometheus-nats-exporter", tag = "latest" }
+    bitnami-redis                     = { registry_key = "dockerhub", name = "bitnami/redis", tag = "7.0.12-debian-11-r19" }
+    memcached                         = { registry_key = "dockerhub", name = "library/memcached", tag = "1.6.37-alpine" }
+    prom-memcached-exporter           = { registry_key = "dockerhub", name = "prom/memcached-exporter", tag = "v0.15.1" }
+    goharbor-harbor-exporter          = { registry_key = "dockerhub", name = "goharbor/harbor-exporter", tag = "v2.14.0" }
+    gitlab-runner                     = { registry_key = "gitlab", name = "gitlab-org/gitlab-runner", tag = "alpine-v17.6.0" }
 
     # ghcr.io
     gha-controller           = { registry_key = "ghcr", name = "actions/gha-runner-scale-set-controller", tag = "0.13.0" }
@@ -422,6 +439,7 @@ module "harbor_replication" {
     capmox                   = { registry_key = "ghcr", name = "ionos-cloud/cluster-api-provider-proxmox", tag = "v0.7.5" }
     capi-k3s-bootstrap       = { registry_key = "ghcr", name = "k3s-io/cluster-api-k3s/bootstrap-controller", tag = "v0.3.0" }
     capi-k3s-controlplane    = { registry_key = "ghcr", name = "k3s-io/cluster-api-k3s/controlplane-controller", tag = "v0.3.0" }
+    kube-vip-v087            = { registry_key = "ghcr", name = "kube-vip/kube-vip", tag = "v0.8.7" }
     kube-vip-v089            = { registry_key = "ghcr", name = "kube-vip/kube-vip", tag = "v0.8.9" }
     kube-vip-v102            = { registry_key = "ghcr", name = "kube-vip/kube-vip", tag = "v1.0.2" }
     capi-rke2-bootstrap      = { registry_key = "ghcr", name = "rancher/cluster-api-provider-rke2-bootstrap", tag = "v0.21.1" }
@@ -431,6 +449,14 @@ module "harbor_replication" {
     siderolabs-flannel       = { registry_key = "ghcr", name = "siderolabs/flannel", tag = "v0.26.7" }
     talos-ccm                = { registry_key = "ghcr", name = "siderolabs/talos-cloud-controller-manager", tag = "v1.11.0" }
     kubelet-cert-approver    = { registry_key = "ghcr", name = "alex1989hu/kubelet-serving-cert-approver", tag = "main" }
+    otel-operator            = { registry_key = "ghcr", name = "open-telemetry/opentelemetry-operator/opentelemetry-operator", tag = "v0.80.0" }
+    open-webui               = { registry_key = "ghcr", name = "open-webui/open-webui", tag = "0.8.10" }
+    open-webui-mcpo          = { registry_key = "ghcr", name = "open-webui/mcpo", tag = "latest" }
+    dexidp-dex               = { registry_key = "ghcr", name = "dexidp/dex", tag = "v2.41.1" }
+    goauthentik-server       = { registry_key = "ghcr", name = "goauthentik/server", tag = "2024.12.3" }
+    cloudnative-pg           = { registry_key = "ghcr", name = "cloudnative-pg/cloudnative-pg", tag = "1.28.0" }
+    paperless-ngx            = { registry_key = "ghcr", name = "paperless-ngx/paperless-ngx", tag = "2.14.7" }
+    kiwix-serve              = { registry_key = "ghcr", name = "kiwix/kiwix-serve", tag = "3.7.0" }
 
     # registry.k8s.io
     k8s-coredns-v1113          = { registry_key = "k8s", name = "coredns/coredns", tag = "v1.11.3" }
@@ -454,31 +480,42 @@ module "harbor_replication" {
     k8s-capi-kubeadm-cp        = { registry_key = "k8s", name = "cluster-api/kubeadm-control-plane-controller", tag = "v1.12.0-rc.0" }
     k8s-capi-ipam              = { registry_key = "k8s", name = "capi-ipam-ic/cluster-api-ipam-in-cluster-controller", tag = "v1.0.3" }
     k8s-snapshot-controller    = { registry_key = "k8s", name = "sig-storage/snapshot-controller", tag = "v8.0.1" }
+    k8s-kube-webhook-certgen   = { registry_key = "k8s", name = "ingress-nginx/kube-webhook-certgen", tag = "v1.6.3" }
 
     # quay.io
-    argocd                     = { registry_key = "quay", name = "argoproj/argocd", tag = "v2.13.2" }
-    argo-rollouts              = { registry_key = "quay", name = "argoproj/argo-rollouts", tag = "v1.7.2" }
-    kubectl-argo-rollouts      = { registry_key = "quay", name = "argoproj/kubectl-argo-rollouts", tag = "v1.7.2" }
-    cert-manager-cainjector    = { registry_key = "quay", name = "jetstack/cert-manager-cainjector", tag = "v1.16.2" }
-    cert-manager-controller    = { registry_key = "quay", name = "jetstack/cert-manager-controller", tag = "v1.16.2" }
-    cert-manager-webhook       = { registry_key = "quay", name = "jetstack/cert-manager-webhook", tag = "v1.16.2" }
-    metallb-controller         = { registry_key = "quay", name = "metallb/controller", tag = "v0.14.9" }
-    metallb-speaker            = { registry_key = "quay", name = "metallb/speaker", tag = "v0.14.9" }
-    prometheus                 = { registry_key = "quay", name = "prometheus/prometheus", tag = "v3.7.3" }
-    node-exporter              = { registry_key = "quay", name = "prometheus/node-exporter", tag = "v1.10.2" }
-    prometheus-config-reloader = { registry_key = "quay", name = "prometheus-operator/prometheus-config-reloader", tag = "v0.86.2" }
-    minio                      = { registry_key = "quay", name = "minio/minio", tag = "RELEASE.2024-12-18T13-15-44Z" }
-    frr                        = { registry_key = "quay", name = "frrouting/frr", tag = "9.1.0" }
-    kubevirt-virt-operator     = { registry_key = "quay", name = "kubevirt/virt-operator", tag = "v1.5.1" }
-    kubevirt-virt-api          = { registry_key = "quay", name = "kubevirt/virt-api", tag = "v1.5.1" }
-    kubevirt-virt-controller   = { registry_key = "quay", name = "kubevirt/virt-controller", tag = "v1.5.1" }
-    kubevirt-virt-handler      = { registry_key = "quay", name = "kubevirt/virt-handler", tag = "v1.5.1" }
-    kubevirt-virt-launcher     = { registry_key = "quay", name = "kubevirt/virt-launcher", tag = "v1.5.1" }
-    kubevirt-virt-exportproxy  = { registry_key = "quay", name = "kubevirt/virt-exportproxy", tag = "v1.5.1" }
-    kubevirt-cdi-operator      = { registry_key = "quay", name = "kubevirt/cdi-operator", tag = "v1.62.0" }
-    kubevirt-cdi-controller    = { registry_key = "quay", name = "kubevirt/cdi-controller", tag = "v1.62.0" }
-    kubevirt-cdi-apiserver     = { registry_key = "quay", name = "kubevirt/cdi-apiserver", tag = "v1.62.0" }
-    kubevirt-cdi-uploadproxy   = { registry_key = "quay", name = "kubevirt/cdi-uploadproxy", tag = "v1.62.0" }
+    argocd                         = { registry_key = "quay", name = "argoproj/argocd", tag = "v2.13.2" }
+    argo-rollouts                  = { registry_key = "quay", name = "argoproj/argo-rollouts", tag = "v1.7.2" }
+    kubectl-argo-rollouts          = { registry_key = "quay", name = "argoproj/kubectl-argo-rollouts", tag = "v1.7.2" }
+    cert-manager-cainjector        = { registry_key = "quay", name = "jetstack/cert-manager-cainjector", tag = "v1.16.2" }
+    cert-manager-controller        = { registry_key = "quay", name = "jetstack/cert-manager-controller", tag = "v1.16.2" }
+    cert-manager-webhook           = { registry_key = "quay", name = "jetstack/cert-manager-webhook", tag = "v1.16.2" }
+    metallb-controller             = { registry_key = "quay", name = "metallb/controller", tag = "v0.14.9" }
+    metallb-speaker                = { registry_key = "quay", name = "metallb/speaker", tag = "v0.14.9" }
+    prometheus                     = { registry_key = "quay", name = "prometheus/prometheus", tag = "v3.7.3" }
+    prometheus-372                 = { registry_key = "quay", name = "prometheus/prometheus", tag = "v3.7.2" }
+    node-exporter                  = { registry_key = "quay", name = "prometheus/node-exporter", tag = "v1.10.2" }
+    prometheus-config-reloader     = { registry_key = "quay", name = "prometheus-operator/prometheus-config-reloader", tag = "v0.86.2" }
+    prometheus-config-reloader-861 = { registry_key = "quay", name = "prometheus-operator/prometheus-config-reloader", tag = "v0.86.1" }
+    minio                          = { registry_key = "quay", name = "minio/minio", tag = "RELEASE.2024-12-18T13-15-44Z" }
+    frr                            = { registry_key = "quay", name = "frrouting/frr", tag = "9.1.0" }
+    kubevirt-virt-operator         = { registry_key = "quay", name = "kubevirt/virt-operator", tag = "v1.5.1" }
+    kubevirt-virt-api              = { registry_key = "quay", name = "kubevirt/virt-api", tag = "v1.5.1" }
+    kubevirt-virt-controller       = { registry_key = "quay", name = "kubevirt/virt-controller", tag = "v1.5.1" }
+    kubevirt-virt-handler          = { registry_key = "quay", name = "kubevirt/virt-handler", tag = "v1.5.1" }
+    kubevirt-virt-launcher         = { registry_key = "quay", name = "kubevirt/virt-launcher", tag = "v1.5.1" }
+    kubevirt-virt-exportproxy      = { registry_key = "quay", name = "kubevirt/virt-exportproxy", tag = "v1.5.1" }
+    kubevirt-cdi-operator          = { registry_key = "quay", name = "kubevirt/cdi-operator", tag = "v1.62.0" }
+    kubevirt-cdi-controller        = { registry_key = "quay", name = "kubevirt/cdi-controller", tag = "v1.62.0" }
+    kubevirt-cdi-apiserver         = { registry_key = "quay", name = "kubevirt/cdi-apiserver", tag = "v1.62.0" }
+    kubevirt-cdi-uploadproxy       = { registry_key = "quay", name = "kubevirt/cdi-uploadproxy", tag = "v1.62.0" }
+    kiwigrid-k8s-sidecar           = { registry_key = "quay", name = "kiwigrid/k8s-sidecar", tag = "1.30.10" }
+    prometheus-alertmanager        = { registry_key = "quay", name = "prometheus/alertmanager", tag = "v0.28.1" }
+    prometheus-operator            = { registry_key = "quay", name = "prometheus-operator/prometheus-operator", tag = "v0.86.1" }
+    cert-manager-acmesolver        = { registry_key = "quay", name = "jetstack/cert-manager-acmesolver", tag = "v1.16.2" }
+    cert-manager-startupapicheck   = { registry_key = "quay", name = "jetstack/cert-manager-startupapicheck", tag = "v1.16.2" }
+    brancz-kube-rbac-proxy         = { registry_key = "quay", name = "brancz/kube-rbac-proxy", tag = "v0.14.2" }
+    prometheus-operator-admission  = { registry_key = "quay", name = "prometheus-operator/admission-webhook", tag = "v0.86.1" }
+    thanos                         = { registry_key = "quay", name = "thanos/thanos", tag = "v0.40.1" }
 
     # cr.fluentbit.io
     fluent-bit = { registry_key = "fluentbit", name = "fluent/fluent-bit", tag = "3.2.8" }
@@ -830,4 +867,7 @@ module "ollama" {
 
   paperless_url       = try(var.config[terraform.workspace].ollama.paperless_url, "")
   paperless_api_token = try(local.secrets_json["kv/cluster-secret-store/secrets/PAPERLESS"]["PAPERLESS_API_TOKEN"], "")
+
+  extra_ollama_urls    = try(var.config[terraform.workspace].ollama.extra_ollama_urls, [])
+  openai_api_endpoints = try(var.config[terraform.workspace].ollama.openai_api_endpoints, [])
 }

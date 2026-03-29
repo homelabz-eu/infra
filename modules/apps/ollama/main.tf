@@ -11,13 +11,16 @@ module "helm" {
   release_name     = "ollama"
   namespace        = module.namespace.name
   chart            = "ollama"
-  repository       = "https://otwld.github.io/ollama-helm"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = 600
   create_namespace = false
 
   values_files = [
     <<-EOT
+      image:
+        repository: registry.homelabz.eu/mirror-dockerhub/ollama/ollama
+
       ollama:
         gpu:
           enabled: false
@@ -104,13 +107,16 @@ module "open_webui" {
   release_name     = "open-webui"
   namespace        = module.namespace.name
   chart            = "open-webui"
-  repository       = "https://helm.openwebui.com"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.webui_chart_version
   timeout          = 600
   create_namespace = false
 
   values_files = [
     <<-EOT
+      image:
+        repository: registry.homelabz.eu/mirror-ghcr/open-webui/open-webui
+
       ollama:
         enabled: false
       pipelines:
@@ -124,6 +130,9 @@ module "open_webui" {
 
       ollamaUrls:
         - http://ollama.${var.namespace}.svc:11434
+%{for url in var.extra_ollama_urls~}
+        - ${url}
+%{endfor~}
 
       extraEnvVars:
         - name: WEBUI_SECRET_KEY
@@ -150,6 +159,12 @@ module "open_webui" {
           value: "ollama"
         - name: RAG_EMBEDDING_MODEL
           value: "nomic-embed-text"
+%{if length(var.openai_api_endpoints) > 0~}
+        - name: OPENAI_API_BASE_URLS
+          value: "${join(";", [for ep in var.openai_api_endpoints : ep.url])}"
+        - name: OPENAI_API_KEYS
+          value: "${join(";", [for ep in var.openai_api_endpoints : ep.api_key])}"
+%{endif~}
 %{if var.pgvector_db_url != ""~}
         - name: DATABASE_URL
           value: "${var.pgvector_db_url}"
@@ -262,7 +277,7 @@ resource "kubernetes_deployment" "searxng" {
       spec {
         container {
           name  = "searxng"
-          image = "searxng/searxng:latest"
+          image = "registry.homelabz.eu/mirror-dockerhub/searxng/searxng:latest"
 
           port {
             container_port = 8080
@@ -369,7 +384,7 @@ resource "kubernetes_deployment" "mcpo" {
       spec {
         container {
           name  = "mcpo"
-          image = "ghcr.io/open-webui/mcpo:latest"
+          image = "registry.homelabz.eu/mirror-ghcr/open-webui/mcpo:latest"
 
           args = ["--config", "/config/config.json", "--port", "8000"]
 

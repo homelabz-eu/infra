@@ -28,7 +28,7 @@ module "otel_operator" {
   release_name     = "opentelemetry-operator"
   namespace        = module.namespace.name
   chart            = "opentelemetry-operator"
-  repository       = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.opentelemetry_operator_version
   timeout          = 300
   create_namespace = false
@@ -54,7 +54,7 @@ module "jaeger_operator" {
   release_name     = "jaeger-operator"
   namespace        = module.namespace.name
   chart            = "jaeger-operator"
-  repository       = "https://jaegertracing.github.io/helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.jaeger_operator_version
   timeout          = 300
   create_namespace = false
@@ -194,7 +194,7 @@ module "prometheus" {
   release_name     = "prometheus"
   namespace        = module.namespace.name
   chart            = "kube-prometheus-stack"
-  repository       = "https://prometheus-community.github.io/helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.prometheus_chart_version
   timeout          = 300
   create_namespace = false
@@ -238,7 +238,7 @@ module "loki" {
   release_name     = "loki"
   namespace        = module.namespace.name
   chart            = "loki"
-  repository       = "https://grafana.github.io/helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.loki_chart_version
   timeout          = 300
   create_namespace = false

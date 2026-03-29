@@ -98,3 +98,12 @@ charts:
   - name: gitea
     repo: https://dl.gitea.com/charts/
     version: "10.6.0"
+  - name: ollama
+    repo: https://otwld.github.io/ollama-helm
+    version: "1.52.0"
+  - name: open-webui
+    repo: https://helm.openwebui.com
+    version: "12.10.0"
+  - name: paperless-ngx
+    repo: https://charts.gabe565.com
+    version: "0.24.1"

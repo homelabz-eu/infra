@@ -40,7 +40,7 @@ module "helm" {
 
   release_name     = var.release_name
   namespace        = local.namespace
-  repository       = "https://helm.releases.hashicorp.com"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart            = "vault"
   chart_version    = var.chart_version
   create_namespace = false

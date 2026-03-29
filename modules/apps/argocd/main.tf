@@ -45,7 +45,7 @@ module "helm" {
   release_name     = "argocd"
   namespace        = module.namespace.name
   chart            = "argo-cd"
-  repository       = "https://argoproj.github.io/argo-helm"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.argocd_version
   timeout          = 600
   create_namespace = false
@@ -60,12 +60,16 @@ module "argo_rollouts_helm" {
   release_name     = "argo-rollouts"
   namespace        = module.namespace.name
   chart            = "argo-rollouts"
-  repository       = "https://argoproj.github.io/argo-helm"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.argo_rollouts_version
   timeout          = 300
   create_namespace = false
   values_files = [yamlencode({
     controller = {
+      image = {
+        registry   = "registry.homelabz.eu/mirror-quay"
+        repository = "argoproj/argo-rollouts"
+      }
       replicas = var.argo_rollouts_controller_replicas
       resources = {
         requests = {
@@ -80,6 +84,10 @@ module "argo_rollouts_helm" {
     }
     dashboard = {
       enabled = var.argo_rollouts_dashboard_enabled
+      image = {
+        registry   = "registry.homelabz.eu/mirror-quay"
+        repository = "argoproj/kubectl-argo-rollouts"
+      }
       service = {
         type = "ClusterIP"
       }

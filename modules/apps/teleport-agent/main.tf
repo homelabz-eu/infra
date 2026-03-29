@@ -72,7 +72,7 @@ module "helm" {
   release_name     = var.release_name
   namespace        = module.namespace.name
   chart            = "teleport-kube-agent"
-  repository       = "https://charts.releases.teleport.dev"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = var.timeout
   create_namespace = false

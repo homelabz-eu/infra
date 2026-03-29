@@ -1,5 +1,8 @@
 # Istio Ingress Gateway Configuration
 
+global:
+  hub: registry.homelabz.eu/mirror-dockerhub/istio
+
 replicaCount: ${gateway_replicas}
 
 service:

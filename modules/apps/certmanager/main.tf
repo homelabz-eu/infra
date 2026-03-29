@@ -21,13 +21,27 @@ module "helm" {
   release_name     = "cert-manager"
   namespace        = module.namespace.name
   chart            = "cert-manager"
-  repository       = "https://charts.jetstack.io"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = 300
   create_namespace = false
   values_files = [
     <<-EOT
       installCRDs: true
+      image:
+        repository: registry.homelabz.eu/mirror-quay/jetstack/cert-manager-controller
+      webhook:
+        image:
+          repository: registry.homelabz.eu/mirror-quay/jetstack/cert-manager-webhook
+      cainjector:
+        image:
+          repository: registry.homelabz.eu/mirror-quay/jetstack/cert-manager-cainjector
+      acmesolver:
+        image:
+          repository: registry.homelabz.eu/mirror-quay/jetstack/cert-manager-acmesolver
+      startupapicheck:
+        image:
+          repository: registry.homelabz.eu/mirror-quay/jetstack/cert-manager-startupapicheck
     EOT
   ]
   set_values = [

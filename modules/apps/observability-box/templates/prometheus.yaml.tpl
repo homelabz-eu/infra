@@ -1,5 +1,19 @@
+kube-state-metrics:
+  image:
+    registry: registry.homelabz.eu/mirror-k8s
+    repository: kube-state-metrics/kube-state-metrics
+prometheus-node-exporter:
+  image:
+    registry: registry.homelabz.eu/mirror-quay
+    repository: prometheus/node-exporter
 alertmanager:
   enabled: false
+  image:
+    repository: registry.homelabz.eu/mirror-quay/prometheus/alertmanager
+configmapReload:
+  prometheus:
+    image:
+      repository: registry.homelabz.eu/mirror-quay/prometheus-operator/prometheus-config-reloader
 prometheus-pushgateway:
   enabled: false
 %{ if length(namespaces) > 0 ~}
@@ -7,6 +21,8 @@ rbac:
   create: false
 %{ endif ~}
 server:
+  image:
+    repository: registry.homelabz.eu/mirror-quay/prometheus/prometheus
 %{ if length(namespaces) > 0 ~}
   namespaces:
 %{ for ns in namespaces ~}

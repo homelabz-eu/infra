@@ -1,3 +1,6 @@
+global:
+  cattle:
+    systemDefaultRegistry: registry.homelabz.eu/mirror-dockerhub
 image:
   pullPolicy: ${image_pull_policy}
 

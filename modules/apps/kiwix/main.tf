@@ -31,7 +31,7 @@ resource "kubernetes_stateful_set" "kiwix" {
       spec {
         container {
           name  = "kiwix-serve"
-          image = "ghcr.io/kiwix/kiwix-serve:3.7.0"
+          image = "registry.homelabz.eu/mirror-ghcr/kiwix/kiwix-serve:3.7.0"
 
           args = ["/data/*.zim"]
 

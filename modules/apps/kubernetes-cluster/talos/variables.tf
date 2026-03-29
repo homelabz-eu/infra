@@ -56,7 +56,7 @@ variable "credentials_ref_name" {
 variable "qemu_guest_agent_image" {
   description = "QEMU guest agent Talos extension image"
   type        = string
-  default     = "ghcr.io/siderolabs/qemu-guest-agent:9.1.1"
+  default     = "registry.homelabz.eu/mirror-ghcr/siderolabs/qemu-guest-agent:9.1.1"
 }
 
 variable "cloud_controller_manifests" {

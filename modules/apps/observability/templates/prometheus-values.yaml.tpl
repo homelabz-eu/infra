@@ -1,4 +1,48 @@
+prometheusOperator:
+  image:
+    registry: registry.homelabz.eu/mirror-quay
+    repository: prometheus-operator/prometheus-operator
+  prometheusConfigReloader:
+    image:
+      registry: registry.homelabz.eu/mirror-quay
+      repository: prometheus-operator/prometheus-config-reloader
+  thanosImage:
+    registry: registry.homelabz.eu/mirror-quay
+    repository: thanos/thanos
+  admissionWebhooks:
+    deployment:
+      image:
+        registry: registry.homelabz.eu/mirror-quay
+        repository: prometheus-operator/admission-webhook
+    patch:
+      image:
+        registry: registry.homelabz.eu/mirror-k8s
+        repository: ingress-nginx/kube-webhook-certgen
+
+alertmanager:
+  alertmanagerSpec:
+    image:
+      registry: registry.homelabz.eu/mirror-quay
+      repository: prometheus/alertmanager
+
+kube-state-metrics:
+  image:
+    registry: registry.homelabz.eu/mirror-k8s
+    repository: kube-state-metrics/kube-state-metrics
+
+prometheus-node-exporter:
+  image:
+    registry: registry.homelabz.eu/mirror-quay
+    repository: prometheus/node-exporter
+
 grafana:
+  image:
+    registry: registry.homelabz.eu/mirror-dockerhub
+    repository: grafana/grafana
+  sidecar:
+    image:
+      registry: registry.homelabz.eu/mirror-quay
+      repository: kiwigrid/k8s-sidecar
   ingress:
     enabled: true
     ingressClassName: ${ingress_class_name}
@@ -29,6 +73,9 @@ grafana:
 
 prometheus:
   prometheusSpec:
+    image:
+      registry: registry.homelabz.eu/mirror-quay
+      repository: prometheus/prometheus
     additionalArgs:
       - name: web.enable-otlp-receiver
         value: ""

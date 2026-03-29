@@ -21,6 +21,7 @@ spec:
       - chmod 600 /home/ubuntu/.ssh/authorized_keys
       - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
     serverConfig:
+      systemDefaultRegistry: registry.homelabz.eu/mirror-dockerhub
       disableCloudController: ${disable_cloud_controller}
 %{ if length(jsondecode(disable_components)) > 0 ~}
       disableComponents:
@@ -99,7 +100,7 @@ spec:
                 hostNetwork: true
                 containers:
                   - name: kube-vip
-                    image: ghcr.io/kube-vip/kube-vip:v0.8.7
+                    image: registry.homelabz.eu/mirror-ghcr/kube-vip/kube-vip:v0.8.7
                     imagePullPolicy: IfNotPresent
                     args:
                       - manager

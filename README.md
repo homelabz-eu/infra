@@ -309,10 +309,11 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 
 **Platform Services** (toolz cluster):
 - HashiCorp Vault for centralized secrets
-- Harbor container registry with upstream replication (Docker Hub, GHCR, registry.k8s.io, Quay.io, and more)
+- Harbor container registry (`registry.homelabz.eu`) — all Helm charts served locally as OCI artifacts, container images replicated from 9 upstream registries (Docker Hub, GHCR, registry.k8s.io, Quay.io, and more)
 - Teleport agent for secure access
-- Ollama LLM inference server (CPU-only, dedicated worker node) with qwen3.5:2b + nomic-embed-text models
-- Open WebUI chat interface with RAG (pgvecto.rs on PostgreSQL VM), web search (SearXNG), and MCP tool integration (MCPO proxy)
+- Ollama LLM inference server (CPU-only dedicated worker node + remote MacBook) with qwen3.5:2b, nomic-embed-text, and 30B+ models via MacBook
+- LM Studio (OpenAI-compatible endpoint on MacBook for additional large models)
+- Open WebUI chat interface with multi-backend support (in-cluster + remote Ollama + LM Studio), RAG (pgvecto.rs on PostgreSQL VM), web search (SearXNG), and MCP tool integration (MCPO proxy)
 - SearXNG metasearch engine configured as local-only (all internet engines disabled, searches Kiwix and Paperless-ngx)
 - Kiwix Serve hosting offline knowledge library (home cluster): full English Wikipedia, 8 Stack Exchange sites (Ask Ubuntu, Server Fault, Super User, Unix, Electronics, Physics, Chemistry, Biology, DIY, Medical Sciences), Wikibooks, Wikivoyage, and iFixit (~75GB ZIM files)
 - Paperless-ngx document management system (home cluster): OCR-powered indexing of ~8,000 technical PDFs with full-text search API, integrated with SearXNG as json_engine
@@ -525,8 +526,9 @@ infra/
 - Fluent Bit v0.48.9 (log forwarding)
 
 **AI/LLM**
-- Ollama (CPU-only inference on dedicated 36-core worker node)
-- Open WebUI (chat interface with RAG, web search, MCP tools, Functions)
+- Ollama (CPU-only inference on dedicated 36-core worker node + remote MacBook for larger models)
+- LM Studio (OpenAI-compatible endpoint on MacBook for 30B+ models)
+- Open WebUI (chat interface with RAG, web search, MCP tools, Functions — multi-backend: in-cluster Ollama, remote Ollama, LM Studio)
 - SearXNG (local-only metasearch engine, all internet engines disabled, queries Kiwix and Paperless-ngx)
 - Kiwix Serve (offline knowledge library on home cluster: Wikipedia, Stack Exchange, Wikibooks, Wikivoyage, iFixit — 75GB across 14 ZIM files)
 - Paperless-ngx (OCR document management on home cluster: full-text search of ~8,000 technical PDFs via REST API)
@@ -544,7 +546,7 @@ infra/
 - Self-hosted GitLab CE (`gitlab.homelabz.eu`) as primary Git and CI/CD platform
 - GitLab CI runners on K8s (toolz cluster)
 - Argo Rollouts (Blue-Green deployments with automated E2E testing via Cypress)
-- Harbor (container registry with pull replication from 9 upstream registries + local Helm chart mirror)
+- Harbor (`registry.homelabz.eu`) — container registry with pull replication from 9 upstream registries, OCI Helm chart mirror (all charts served from `oci://registry.homelabz.eu/helm-charts`), and local application images
 - Custom runner images with kubectl, Helm, OpenTofu, SOPS, buildctl
 
 **Security**

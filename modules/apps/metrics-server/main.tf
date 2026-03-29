@@ -4,13 +4,15 @@ module "helm" {
   release_name     = "metrics-server"
   namespace        = var.namespace
   chart            = "metrics-server"
-  repository       = "https://kubernetes-sigs.github.io/metrics-server/"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = 300
   create_namespace = false
 
   values_files = [
     <<-EOT
+      image:
+        repository: registry.homelabz.eu/mirror-k8s/metrics-server/metrics-server
       args:
         - --cert-dir=/tmp
         - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname

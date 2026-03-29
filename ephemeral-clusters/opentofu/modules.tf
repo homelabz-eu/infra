@@ -74,6 +74,7 @@ module "cert_manager" {
   source = "../../modules/apps/certmanager"
 
   install_crd       = var.config[terraform.workspace].crds_installed
+  issuer_type       = "acme"
   cloudflare_secret = local.secrets_json["kv/cloudflare"]["api-token"]
 }
 

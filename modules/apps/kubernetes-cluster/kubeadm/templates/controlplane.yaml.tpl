@@ -15,6 +15,7 @@ spec:
 %{ endfor ~}
         sudo: ALL=(ALL) NOPASSWD:ALL
     clusterConfiguration:
+      imageRepository: registry.homelabz.eu/mirror-k8s
       apiServer:
         certSANs:
           - ${control_plane_endpoint_ip}
@@ -40,7 +41,7 @@ spec:
           spec:
             containers:
             - name: kube-vip
-              image: ghcr.io/kube-vip/kube-vip:v1.0.2
+              image: registry.homelabz.eu/mirror-ghcr/kube-vip/kube-vip:v1.0.2
               args:
               - manager
               env:
@@ -164,7 +165,7 @@ spec:
           - name: rotate-certificates
             value: "true"
     postKubeadmCommands:
-      - kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f ${cni_manifest_url}
+      - curl -sL ${cni_manifest_url} | sed 's|docker.io/calico/|registry.homelabz.eu/mirror-dockerhub/calico/|g' | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -
       - |
         kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f - <<EOF
         apiVersion: v1
@@ -225,7 +226,7 @@ spec:
               serviceAccountName: kubelet-csr-approver
               containers:
               - name: kubelet-csr-approver
-                image: postfinance/kubelet-csr-approver:v1.2.12
+                image: registry.homelabz.eu/mirror-dockerhub/postfinance/kubelet-csr-approver:v1.2.12
                 args:
                 - -provider-regex=^.*$
                 - -provider-ip-prefixes=192.168.1.0/24

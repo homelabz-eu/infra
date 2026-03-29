@@ -1,3 +1,7 @@
+image:
+  manager:
+    repository: registry.homelabz.eu/mirror-k8s/capi-operator/cluster-api-operator
+
 # Core Cluster API Provider
 %{ if enable_core_provider ~}
 core:

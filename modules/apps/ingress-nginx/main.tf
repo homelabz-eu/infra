@@ -25,7 +25,7 @@ module "helm" {
   release_name     = var.release_name
   namespace        = var.namespace
   chart            = "nginx-ingress"
-  repository       = "https://helm.nginx.com/stable"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   create_namespace = var.create_namespace
   timeout          = var.timeout

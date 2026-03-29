@@ -1,3 +1,4 @@
+image: registry.homelabz.eu/mirror-ecr-public/gravitational/teleport-distroless
 roles: "${roles}"
 proxyAddr: "${proxy_server}"
 enterprise: false

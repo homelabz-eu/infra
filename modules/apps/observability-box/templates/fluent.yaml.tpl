@@ -1,3 +1,5 @@
+image:
+  repository: registry.homelabz.eu/mirror-fluentbit/fluent/fluent-bit
 luaScripts:
     extract_trace_id.lua: |
         function extract_trace_id(tag, timestamp, record)

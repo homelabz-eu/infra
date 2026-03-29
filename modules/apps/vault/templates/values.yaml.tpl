@@ -1,4 +1,11 @@
+injector:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/hashicorp/vault-k8s
+  agentImage:
+    repository: registry.homelabz.eu/mirror-dockerhub/hashicorp/vault
 server:
+  image:
+    repository: registry.homelabz.eu/mirror-dockerhub/hashicorp/vault
   dataStorage:
     enabled: ${data_storage_enabled}
 %{if data_storage_storage_class != ""}

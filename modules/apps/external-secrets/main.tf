@@ -21,7 +21,7 @@ module "helm" {
   release_name     = "external-secrets"
   namespace        = module.namespace.name
   chart            = "external-secrets"
-  repository       = "https://charts.external-secrets.io"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = var.timeout
   create_namespace = false
@@ -31,6 +31,14 @@ module "helm" {
   values_files = [
     <<-EOT
       installCRDs: true
+      image:
+        repository: registry.homelabz.eu/mirror-external-secrets/external-secrets/external-secrets
+      certController:
+        image:
+          repository: registry.homelabz.eu/mirror-external-secrets/external-secrets/external-secrets
+      webhook:
+        image:
+          repository: registry.homelabz.eu/mirror-external-secrets/external-secrets/external-secrets
     EOT
   ]
 

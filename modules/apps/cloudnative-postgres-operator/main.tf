@@ -1,6 +1,6 @@
 resource "helm_release" "cloudnative_pg" {
   name       = "cnpg"
-  repository = "https://cloudnative-pg.github.io/charts"
+  repository = "oci://registry.homelabz.eu/helm-charts"
   chart      = "cloudnative-pg"
   version    = var.chart_version
   namespace  = var.namespace
@@ -9,6 +9,9 @@ resource "helm_release" "cloudnative_pg" {
 
   values = [
     yamlencode({
+      image = {
+        repository = "registry.homelabz.eu/mirror-ghcr/cloudnative-pg/cloudnative-pg"
+      }
       crds = {
         create = true
       }

@@ -18,13 +18,22 @@ module "helm" {
   release_name     = "metallb"
   namespace        = module.namespace.name
   chart            = "metallb"
-  repository       = "https://metallb.github.io/metallb"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = 300
   create_namespace = false
 
   values_files = [
     <<-EOT
+      controller:
+        image:
+          repository: registry.homelabz.eu/mirror-quay/metallb/controller
+      speaker:
+        image:
+          repository: registry.homelabz.eu/mirror-quay/metallb/speaker
+        frr:
+          image:
+            repository: registry.homelabz.eu/mirror-quay/frrouting/frr
       resources:
         controller:
           limits:

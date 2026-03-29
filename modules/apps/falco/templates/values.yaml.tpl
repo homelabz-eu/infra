@@ -1,5 +1,17 @@
+image:
+  registry: registry.homelabz.eu/mirror-dockerhub
+  repository: falcosecurity/falco
+falcoctl:
+  image:
+    registry: registry.homelabz.eu/mirror-dockerhub
+    repository: falcosecurity/falcoctl
 driver:
   kind: ${driver_kind}
+  loader:
+    initContainer:
+      image:
+        registry: registry.homelabz.eu/mirror-dockerhub
+        repository: falcosecurity/falco-driver-loader
 
 tty: true
 

@@ -105,7 +105,7 @@ spec:
           value: ${vip_address}
         - name: prometheus_server
           value: :2112
-        image: ghcr.io/kube-vip/kube-vip:v0.8.9
+        image: registry.homelabz.eu/mirror-ghcr/kube-vip/kube-vip:v0.8.9
         imagePullPolicy: Always
         name: kube-vip
         resources: {}

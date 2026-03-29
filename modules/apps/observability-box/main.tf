@@ -41,7 +41,7 @@ module "otel_collector_helm" {
   release_name     = var.otel_collector_release_name
   namespace        = module.namespace.name
   create_namespace = false
-  repository       = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart            = "opentelemetry-collector"
   chart_version    = var.otel_collector_chart_version
   timeout          = var.otel_collector_timeout
@@ -56,7 +56,7 @@ module "fluent_helm" {
   release_name     = var.fluent_release_name
   namespace        = module.namespace.name
   create_namespace = false
-  repository       = "https://fluent.github.io/helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart            = "fluent-bit"
   chart_version    = var.fluent_chart_version
   force_update     = var.fluent_force_update
@@ -143,7 +143,7 @@ module "prometheus_helm" {
   release_name     = var.prometheus_release_name
   namespace        = module.namespace.name
   create_namespace = false
-  repository       = "https://prometheus-community.github.io/helm-charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart            = "prometheus"
   chart_version    = var.prometheus_chart_version
   force_update     = var.prometheus_force_update

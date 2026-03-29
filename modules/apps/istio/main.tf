@@ -15,7 +15,7 @@ module "istio_base" {
   release_name     = "istio-base"
   namespace        = module.namespace.name
   chart            = "base"
-  repository       = "https://istio-release.storage.googleapis.com/charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.istio_version
   timeout          = 300
   create_namespace = false
@@ -30,7 +30,7 @@ module "istiod" {
   release_name     = "istiod"
   namespace        = module.namespace.name
   chart            = "istiod"
-  repository       = "https://istio-release.storage.googleapis.com/charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.istio_version
   timeout          = 300
   create_namespace = false
@@ -53,7 +53,7 @@ module "istio_ingress" {
   release_name     = "istio-ingressgateway"
   namespace        = module.namespace.name
   chart            = "gateway"
-  repository       = "https://istio-release.storage.googleapis.com/charts"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.istio_version
   timeout          = 300
   create_namespace = false

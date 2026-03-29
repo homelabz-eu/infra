@@ -1,3 +1,5 @@
+image:
+  repository: registry.homelabz.eu/mirror-dockerhub/otel/opentelemetry-collector-contrib
 mode: ${mode}
 
 presets:

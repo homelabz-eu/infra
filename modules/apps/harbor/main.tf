@@ -119,7 +119,7 @@ module "helm" {
   release_name     = var.release_name
   namespace        = module.namespace.name
   chart            = "harbor"
-  repository       = "https://helm.goharbor.io"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   timeout          = var.timeout
   create_namespace = false

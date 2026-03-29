@@ -81,7 +81,7 @@ module "helm" {
   release_name     = "cluster-autoscaler"
   namespace        = module.namespace.name
   chart            = "cluster-autoscaler"
-  repository       = "https://kubernetes.github.io/autoscaler"
+  repository       = "oci://registry.homelabz.eu/helm-charts"
   chart_version    = var.chart_version
   create_namespace = false
   values_files     = module.values.rendered_values
