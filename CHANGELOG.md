@@ -1,3 +1,13 @@
+## [1.11.9](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.8...v1.11.9) (2026-04-03)
+
+### Tasks
+
+* point to internal resources ([fd24478](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/fd244788f7feab66b068762a8234ae9a0b90744c))
+
+### Bug Fixes
+
+* use external-secrets synced Cloudflare token for ACME cert issuance in ephemeral clusters ([042bd75](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/042bd75e36b966555f6de639df174b5bb69c5410))
+
 ## [1.11.8](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.7...v1.11.8) (2026-03-26)
 
 ### Documentation
