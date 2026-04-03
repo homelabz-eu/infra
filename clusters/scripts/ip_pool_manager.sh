@@ -82,7 +82,7 @@ allocate_ip() {
         # Check if cluster already has an IP
         local existing_ip=$(echo "$allocations" | jq -r --arg cluster "$cluster_name" 'to_entries[] | select(.value == $cluster) | .key')
         if [[ -n "$existing_ip" ]]; then
-            echo -e "${YELLOW}Cluster $cluster_name already has IP: $existing_ip${NC}"
+            echo -e "${YELLOW}Cluster $cluster_name already has IP: $existing_ip${NC}" >&2
             echo "$existing_ip"
             return 0
         fi
