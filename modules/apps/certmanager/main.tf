@@ -9,9 +9,14 @@ module "namespace" {
 
   create = true
   name   = var.namespace
-  labels = {
-    "kubernetes.io/metadata.name" = var.namespace
-  }
+  labels = merge(
+    {
+      "kubernetes.io/metadata.name" = var.namespace
+    },
+    var.cloudflare_secret_ref != null ? {
+      "cluster-secrets" = "true" # pragma: allowlist secret
+    } : {}
+  )
 }
 
 // Deploy cert-manager via Helm
@@ -53,7 +58,7 @@ module "helm" {
 }
 
 module "cloudflare_secret" {
-  count  = var.issuer_type == "acme" ? 1 : 0
+  count  = var.issuer_type == "acme" && var.cloudflare_secret_ref == null ? 1 : 0
   source = "../../base/credentials"
 
   name              = "cloudflare-api-token"
@@ -64,6 +69,11 @@ module "cloudflare_secret" {
   data = {
     "api-token" = var.cloudflare_secret
   }
+}
+
+locals {
+  cloudflare_secret_name = var.cloudflare_secret_ref != null ? var.cloudflare_secret_ref.name : try(module.cloudflare_secret[0].name, "cloudflare-api-token")
+  cloudflare_secret_key  = var.cloudflare_secret_ref != null ? var.cloudflare_secret_ref.key : "api-token"
 }
 
 resource "kubernetes_manifest" "letsencrypt_issuer" {
@@ -89,8 +99,8 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
               "cloudflare" = {
                 "email" = var.email
                 "apiTokenSecretRef" = {
-                  "name" = module.cloudflare_secret[0].name
-                  "key"  = "api-token"
+                  "name" = local.cloudflare_secret_name
+                  "key"  = local.cloudflare_secret_key
                 }
               }
             }

@@ -73,9 +73,12 @@ module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
   source = "../../modules/apps/certmanager"
 
-  install_crd       = var.config[terraform.workspace].crds_installed
-  issuer_type       = "acme"
-  cloudflare_secret = local.secrets_json["kv/cloudflare"]["api-token"]
+  install_crd = var.config[terraform.workspace].crds_installed
+  issuer_type = "acme"
+  cloudflare_secret_ref = {
+    name = "cluster-secrets"
+    key  = "CLOUDFLARE_API_TOKEN"
+  }
 }
 
 module "external_secrets" {

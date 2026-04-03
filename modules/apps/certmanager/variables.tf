@@ -51,3 +51,12 @@ variable "cloudflare_secret" {
   sensitive   = true
   default     = ""
 }
+
+variable "cloudflare_secret_ref" {
+  description = "Reference to an existing K8s secret containing the Cloudflare API token. When set, skips creating the cloudflare-api-token secret."
+  type = object({
+    name = string
+    key  = string
+  })
+  default = null
+}
