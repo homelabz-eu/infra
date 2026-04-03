@@ -1,3 +1,9 @@
+## [1.11.12](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.11...v1.11.12) (2026-04-03)
+
+### Bug Fixes
+
+* handle empty cloudflare_secret module in cert-manager outputs ([bd47f68](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/bd47f68b6a66306bcdd97adc50b40d334dead8d3))
+
 ## [1.11.11](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.10...v1.11.11) (2026-04-03)
 
 ### Bug Fixes
