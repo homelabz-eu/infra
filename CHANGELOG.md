@@ -1,3 +1,9 @@
+## [1.11.10](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.9...v1.11.10) (2026-04-03)
+
+### Bug Fixes
+
+* redirect ip_pool_manager info message to stderr on existing allocation ([3fc4c15](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/3fc4c15368f419c79fd6a031fd1e2eaf036e495d))
+
 ## [1.11.9](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.8...v1.11.9) (2026-04-03)
 
 ### Tasks
