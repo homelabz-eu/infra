@@ -1,3 +1,9 @@
+## [1.11.11](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.10...v1.11.11) (2026-04-03)
+
+### Bug Fixes
+
+* return single IP from ip_pool_manager on existing allocation ([f347762](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/f3477622db93c7ee983957e8448e672d027b0f32))
+
 ## [1.11.10](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.9...v1.11.10) (2026-04-03)
 
 ### Bug Fixes
