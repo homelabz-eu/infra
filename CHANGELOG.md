@@ -1,3 +1,13 @@
+## [1.12.0](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.12...v1.12.0) (2026-04-06)
+
+### Features
+
+* add automated media pipeline stack (Plex + *arr) on node01 ([befa9d7](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/befa9d7961cfd966f7e7e521ba2783bfbec309ce))
+
+### Bug Fixes
+
+* remove systemDefaultRegistry from RKE2 CAPI templates ([1fe6d46](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/1fe6d46efd33ccac88b5e8c6ca1681325032cab2))
+
 ## [1.11.12](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.11...v1.11.12) (2026-04-03)
 
 ### Bug Fixes
