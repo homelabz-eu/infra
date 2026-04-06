@@ -335,7 +335,7 @@ Configuration is workspace-specific via `workload` variable - modules only deplo
 ### High Availability
 
 **Multi-Cluster Architecture**
-- 5 environment-isolated Kubernetes clusters (prod, clustermgmt, toolz, home, observability) + ephemeral clusters per PR
+- 6 environment-isolated Kubernetes clusters (prod, clustermgmt, toolz, home, media, observability) + ephemeral clusters per PR
 - Production workloads distributed across multiple replicas via Kustomize overlays
 - HAProxy load balancer for vanilla Kubernetes traffic distribution
 - MetalLB for LoadBalancer service type support on bare metal
@@ -353,7 +353,7 @@ Configuration is workspace-specific via `workload` variable - modules only deplo
 
 1. **Encryption at Rest**: SOPS with age encryption for all secrets in Git
    - Age public key: `age15vvdhaj90s3nru2zw4p2a9yvdrv6alfg0d6ea9zxpx3eagyqfqlsgdytsp`
-   - Automated scripts: `secret_new.sh`, `secret_edit.sh`, `secret_view.sh`
+   - Go CLI tool: `secret-manager` (list, get, set, delete, edit, encrypt)
 
 2. **Runtime Secret Storage**: HashiCorp Vault deployed on toolz cluster
    - KV v2 engine for versioned secrets
@@ -442,12 +442,12 @@ infra/
 ├── clusters/             # Kubernetes workload definitions (OpenTofu)
 │   ├── variables.tf     # Workspace configurations and Cluster API cluster definitions
 │   ├── modules.tf       # All module invocations with conditional logic
-│   ├── load_secrets.py  # SOPS decryption to JSON
+│   └── ...              # OpenTofu configs
 │   └── scripts/
 │       └── update_kubeconfig_sops.sh  # Kubeconfig extraction and SOPS management
 ├── modules/
 │   ├── base/            # 10 foundational modules (helm, namespace, ingress, monitoring, credentials, persistence, istio-gateway, istio-virtualservice, cnpg-database, values-template)
-│   └── apps/            # 33 application modules categorized as:
+│   └── apps/            # 39 application modules categorized as:
 │       ├── Cluster: kubernetes-cluster, clusterapi-operator
 │       ├── Infrastructure: istio, metallb, external-secrets, cert-manager, externaldns, ingress-nginx, kubelet-csr-approver, local-path-provisioner, metrics-server
 │       ├── Data: cloudnative-postgres, cloudnative-postgres-operator, redis, nats
@@ -456,6 +456,7 @@ infra/
 │       ├── Security: vault, teleport-agent, authentik, falco
 │       ├── Storage: longhorn, local-path-provisioner
 │       ├── Virtualization: kubevirt, kubevirt-operator
+│       ├── Media: plex, radarr, sonarr, prowlarr, qbittorrent, media-storage
 │       └── Other: harbor, harbor-replication, immich, kiwix, paperless-ngx, registry, cluster-autoscaler, oracle-backup
 ├── init/
 │   ├── vms/             # YAML VM definitions for declarative provisioning (legacy)
@@ -494,6 +495,7 @@ infra/
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
 | ephemeral | Talos | Cluster API | Per-PR environments | Dynamic | Created/destroyed per pull request |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, Kiwix (offline knowledge library: Wikipedia + Stack Exchange + Wikibooks + Wikivoyage + iFixit), External Secrets |
+| media | K3s | Cluster API | Automated media pipeline | Single node (NODE01) | Plex, Radarr, Sonarr, Prowlarr, qBittorrent |
 | observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
 
 ## Technology Stack
@@ -505,9 +507,10 @@ infra/
 - Cluster API v1.12.0 with CAPMOX v0.7.5 (Proxmox provider)
 
 **Kubernetes Distributions**
-- K3s (lightweight, single-node)
-- kubeadm (standard multi-node)
-- Talos Linux (immutable infrastructure)
+- K3s (lightweight, single-node — home, clustermgmt legacy, media via CAPI)
+- kubeadm (standard multi-node — prod via CAPI)
+- RKE2 (enterprise-grade — toolz via CAPI)
+- Talos Linux (immutable infrastructure — ephemeral clusters)
 
 **Platform Services**
 - ArgoCD 7.7.12 (GitOps)
@@ -570,7 +573,7 @@ Clusters are accessible via the `cluster-secrets` Kubernetes secret deployed to 
 
 **Synchronization Flow**:
 1. SOPS-encrypted secrets stored in [secrets/](secrets/) directory
-2. `make plan/apply` runs [clusters/load_secrets.py](clusters/load_secrets.py) to decrypt secrets to `clusters/tmp/secrets.json`
+2. `make plan/apply` runs `secret-manager dump` to decrypt secrets to `clusters/tmp/secrets.json`
 3. OpenTofu processes secrets via `locals.tf` and passes to External Secrets module
 4. External Secrets module creates ExternalSecret objects referencing Vault paths
 5. External Secrets Operator syncs from Vault to Kubernetes secrets

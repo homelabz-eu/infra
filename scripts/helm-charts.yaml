@@ -73,7 +73,7 @@ charts:
     version: "1.2.0"
   - name: immich
     repo: https://immich-app.github.io/immich-charts
-    version: "0.10.3"
+    version: "0.11.1"
   - name: authentik
     repo: https://charts.goauthentik.io
     version: "2024.12.3"
@@ -107,3 +107,9 @@ charts:
   - name: paperless-ngx
     repo: https://charts.gabe565.com
     version: "0.24.1"
+  - name: app-template
+    repo: https://bjw-s-labs.github.io/helm-charts
+    version: "3.7.3"
+  - name: plex-media-server
+    repo: https://raw.githubusercontent.com/plexinc/pms-docker/gh-pages
+    version: "0.6.0"

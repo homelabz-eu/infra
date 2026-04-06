@@ -1,0 +1,85 @@
+---
+- name: Attach and mount slowdata disk for media storage
+  hosts: "{{ target_hosts | default('localhost') }}"
+  become: true
+  gather_facts: yes
+  vars:
+    vm_id: "{{ vmid }}"
+    proxmox_node: "node01"
+    disk_storage: "slowdata"
+    disk_size: "{{ size | default('500G') }}"
+    disk_device: "/dev/sdb"
+    mount_point: "/data"
+    filesystem: "ext4"
+    media_uid: 1000
+    media_gid: 1000
+    media_dirs:
+      - "torrents/movies"
+      - "torrents/tv"
+      - "media/movies"
+      - "media/tv"
+
+  tasks:
+    - name: Attach slowdata disk to VM via Proxmox API
+      delegate_to: "{{ proxmox_node }}"
+      command: >
+        qm set {{ vm_id }} -scsi1 {{ disk_storage }}:{{ disk_size }}
+      register: attach_result
+      changed_when: "'update' in attach_result.stdout or attach_result.rc == 0"
+      failed_when: attach_result.rc != 0
+
+    - name: Rescan SCSI bus to detect new disk
+      command: "echo '- - -' > /sys/class/scsi_host/host0/scan"
+      changed_when: false
+
+    - name: Wait for disk device to appear
+      wait_for:
+        path: "{{ disk_device }}"
+        timeout: 30
+
+    - name: Check if disk is already formatted
+      command: blkid {{ disk_device }}
+      register: blkid_result
+      failed_when: false
+      changed_when: false
+
+    - name: Format disk with ext4
+      command: mkfs.ext4 -F {{ disk_device }}
+      when: blkid_result.rc != 0 or "ext4" not in blkid_result.stdout
+
+    - name: Create mount point directory
+      file:
+        path: "{{ mount_point }}"
+        state: directory
+        mode: "0755"
+
+    - name: Get disk UUID
+      command: blkid -s UUID -o value {{ disk_device }}
+      register: disk_uuid
+      changed_when: false
+
+    - name: Add disk to fstab for persistent mounting
+      mount:
+        path: "{{ mount_point }}"
+        src: "UUID={{ disk_uuid.stdout }}"
+        fstype: "{{ filesystem }}"
+        opts: "defaults,nofail"
+        state: mounted
+
+    - name: Create media directory structure
+      file:
+        path: "{{ mount_point }}/{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ media_uid }}"
+        group: "{{ media_gid }}"
+      loop: "{{ media_dirs }}"
+
+    - name: Show mount details
+      command: df -h {{ mount_point }}
+      register: mount_details
+      changed_when: false
+
+    - name: Display mount info
+      debug:
+        msg: "Slowdata disk mounted at {{ mount_point }} with {{ mount_details.stdout_lines[1] }}"

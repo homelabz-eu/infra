@@ -871,3 +871,64 @@ module "ollama" {
   extra_ollama_urls    = try(var.config[terraform.workspace].ollama.extra_ollama_urls, [])
   openai_api_endpoints = try(var.config[terraform.workspace].ollama.openai_api_endpoints, [])
 }
+
+module "media_storage" {
+  count  = contains(local.workload, "media_storage") ? 1 : 0
+  source = "../modules/apps/media-storage"
+}
+
+module "prowlarr" {
+  count  = contains(local.workload, "prowlarr") ? 1 : 0
+  source = "../modules/apps/prowlarr"
+
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].prowlarr.ingress_host, "")
+}
+
+module "radarr" {
+  count  = contains(local.workload, "radarr") ? 1 : 0
+  source = "../modules/apps/radarr"
+
+  namespace       = "media"
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].radarr.ingress_host, "")
+  media_pvc_name  = "media-data"
+
+  depends_on = [module.media_storage]
+}
+
+module "sonarr" {
+  count  = contains(local.workload, "sonarr") ? 1 : 0
+  source = "../modules/apps/sonarr"
+
+  namespace       = "media"
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].sonarr.ingress_host, "")
+  media_pvc_name  = "media-data"
+
+  depends_on = [module.media_storage]
+}
+
+module "qbittorrent" {
+  count  = contains(local.workload, "qbittorrent") ? 1 : 0
+  source = "../modules/apps/qbittorrent"
+
+  namespace       = "media"
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].qbittorrent.ingress_host, "")
+  media_pvc_name  = "media-data"
+
+  depends_on = [module.media_storage]
+}
+
+module "plex" {
+  count  = contains(local.workload, "plex") ? 1 : 0
+  source = "../modules/apps/plex"
+
+  namespace       = "media"
+  ingress_enabled = true
+  ingress_host    = try(var.config[terraform.workspace].plex.ingress_host, "")
+  media_pvc_name  = "media-data"
+
+  depends_on = [module.media_storage]
+}

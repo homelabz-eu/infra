@@ -16,7 +16,6 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "nats",
       "observability-box",
       "gitlab_runner",
       "harbor_replication",
@@ -41,6 +40,17 @@ variable "workload" {
       "immich",
       "kiwix",
       "paperless_ngx"
+    ]
+    media = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets",
+      "media_storage",
+      "prowlarr",
+      "radarr",
+      "sonarr",
+      "qbittorrent",
+      "plex",
     ]
     prod = [
       "local-path-provisioner",
@@ -185,6 +195,31 @@ variable "config" {
           extra_wk_disk_size = 100
           extra_wk_taints    = ["dedicated=ollama:NoSchedule"]
           extra_wk_labels    = { "dedicated" = "ollama" }
+        },
+        {
+          cluster_type              = "k3s"
+          name                      = "media"
+          k3s_version               = "v1.30.6+k3s1"
+          control_plane_endpoint_ip = "192.168.1.50"
+          ip_range_start            = "192.168.1.51"
+          ip_range_end              = "192.168.1.55"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3"]
+
+          source_node   = "node01"
+          template_id   = 9004
+          allowed_nodes = ["node01"]
+
+          cp_replicas = 1
+          wk_replicas = 0
+
+          cp_disk_size = 50
+          cp_memory    = 10240
+          cp_cores     = 4
+
+          disable_components = []
+          autoscaler_enabled = false
         },
         # {
         #   cluster_type              = "talos"
@@ -391,6 +426,25 @@ variable "config" {
       }
       paperless_ngx = {
         ingress_host = "paperless.homelabz.eu"
+      }
+    }
+    media = {
+      kubernetes_context = "media"
+      crds_installed     = true
+      prowlarr = {
+        ingress_host = "prowlarr.homelabz.eu"
+      }
+      radarr = {
+        ingress_host = "radarr.homelabz.eu"
+      }
+      sonarr = {
+        ingress_host = "sonarr.homelabz.eu"
+      }
+      qbittorrent = {
+        ingress_host = "qbittorrent.homelabz.eu"
+      }
+      plex = {
+        ingress_host = "plex.homelabz.eu"
       }
     }
     prod = {
