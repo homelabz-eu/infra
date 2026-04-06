@@ -8,7 +8,6 @@ spec:
     spec:
       preRKE2Commands:
       - 'INSTANCE_ID=$(cloud-init query instance-id) && mkdir -p /etc/rancher/rke2/config.yaml.d && echo "kubelet-arg:" > /etc/rancher/rke2/config.yaml.d/provider-id.yaml && echo "- provider-id=proxmox://$INSTANCE_ID" >> /etc/rancher/rke2/config.yaml.d/provider-id.yaml'
-      - 'echo "system-default-registry: registry.homelabz.eu/mirror-dockerhub" > /etc/rancher/rke2/config.yaml.d/registry.yaml'
       agentConfig:
         additionalUserData:
           data:
