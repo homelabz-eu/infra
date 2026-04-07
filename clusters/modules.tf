@@ -881,18 +881,23 @@ module "prowlarr" {
   count  = contains(local.workload, "prowlarr") ? 1 : 0
   source = "../modules/apps/prowlarr"
 
-  ingress_enabled = true
-  ingress_host    = try(var.config[terraform.workspace].prowlarr.ingress_host, "")
+  namespace        = "media"
+  create_namespace = false
+  ingress_enabled  = true
+  ingress_host     = try(var.config[terraform.workspace].prowlarr.ingress_host, "")
+
+  depends_on = [module.media_storage]
 }
 
 module "radarr" {
   count  = contains(local.workload, "radarr") ? 1 : 0
   source = "../modules/apps/radarr"
 
-  namespace       = "media"
-  ingress_enabled = true
-  ingress_host    = try(var.config[terraform.workspace].radarr.ingress_host, "")
-  media_pvc_name  = "media-data"
+  namespace        = "media"
+  create_namespace = false
+  ingress_enabled  = true
+  ingress_host     = try(var.config[terraform.workspace].radarr.ingress_host, "")
+  media_pvc_name   = "media-data"
 
   depends_on = [module.media_storage]
 }
@@ -901,10 +906,11 @@ module "sonarr" {
   count  = contains(local.workload, "sonarr") ? 1 : 0
   source = "../modules/apps/sonarr"
 
-  namespace       = "media"
-  ingress_enabled = true
-  ingress_host    = try(var.config[terraform.workspace].sonarr.ingress_host, "")
-  media_pvc_name  = "media-data"
+  namespace        = "media"
+  create_namespace = false
+  ingress_enabled  = true
+  ingress_host     = try(var.config[terraform.workspace].sonarr.ingress_host, "")
+  media_pvc_name   = "media-data"
 
   depends_on = [module.media_storage]
 }
@@ -913,10 +919,11 @@ module "qbittorrent" {
   count  = contains(local.workload, "qbittorrent") ? 1 : 0
   source = "../modules/apps/qbittorrent"
 
-  namespace       = "media"
-  ingress_enabled = true
-  ingress_host    = try(var.config[terraform.workspace].qbittorrent.ingress_host, "")
-  media_pvc_name  = "media-data"
+  namespace        = "media"
+  create_namespace = false
+  ingress_enabled  = true
+  ingress_host     = try(var.config[terraform.workspace].qbittorrent.ingress_host, "")
+  media_pvc_name   = "media-data"
 
   depends_on = [module.media_storage]
 }
@@ -925,10 +932,11 @@ module "plex" {
   count  = contains(local.workload, "plex") ? 1 : 0
   source = "../modules/apps/plex"
 
-  namespace       = "media"
-  ingress_enabled = true
-  ingress_host    = try(var.config[terraform.workspace].plex.ingress_host, "")
-  media_pvc_name  = "media-data"
+  namespace        = "media"
+  create_namespace = false
+  ingress_enabled  = true
+  ingress_host     = try(var.config[terraform.workspace].plex.ingress_host, "")
+  media_pvc_name   = "media-data"
 
   depends_on = [module.media_storage]
 }

@@ -3,6 +3,11 @@ variable "namespace" {
   default = "prowlarr"
 }
 
+variable "create_namespace" {
+  type    = bool
+  default = true
+}
+
 variable "chart_version" {
   type    = string
   default = "3.7.3"

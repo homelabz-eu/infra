@@ -1,7 +1,7 @@
 module "namespace" {
   source = "../../base/namespace"
 
-  create = true
+  create = var.create_namespace
   name   = var.namespace
 }
 

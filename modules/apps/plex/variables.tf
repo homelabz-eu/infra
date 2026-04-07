@@ -3,6 +3,11 @@ variable "namespace" {
   default = "plex"
 }
 
+variable "create_namespace" {
+  type    = bool
+  default = true
+}
+
 variable "chart_version" {
   type    = string
   default = "0.6.0"
