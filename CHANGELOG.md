@@ -1,3 +1,10 @@
+## [1.12.1](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.12.0...v1.12.1) (2026-04-07)
+
+### Bug Fixes
+
+* add create_namespace variable to media modules and fix namespace collision ([e8876cc](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/e8876cc2cc8b093559574479a3fc6b0680eccaa1))
+* use template 9014 for media cluster on node01 ([265f026](https://gitlab.homelabz.eu/homelabz-eu/infra/commit/265f0261aea709a574495077fcb2d3eccfd15bde))
+
 ## [1.12.0](https://gitlab.homelabz.eu/homelabz-eu/infra/compare/v1.11.12...v1.12.0) (2026-04-06)
 
 ### Features
