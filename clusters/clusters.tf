@@ -208,7 +208,7 @@ variable "config" {
           dns_servers               = ["192.168.1.3"]
 
           source_node   = "node01"
-          template_id   = 9004
+          template_id   = 9014
           allowed_nodes = ["node01"]
 
           cp_replicas = 1
