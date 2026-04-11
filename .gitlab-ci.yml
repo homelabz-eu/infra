@@ -29,7 +29,7 @@ variables:
     - export AWS_SECRET_ACCESS_KEY="$rootPassword"
     - export KUBECONFIG=/tmp/kubeconfig
     - make init
-    - cd clusters && python3 load_secrets.py && cd ..
+    - cd clusters && secret-manager dump && cd ..
 
 .tofu-changes:
   rules:
@@ -170,6 +170,10 @@ build-dockerfiles:
       CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
       MODIFIED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "(^|/)Dockerfile$" | grep -v "/\." | grep -v "/node_modules/" || true)
 
+      if echo "$CHANGED_FILES" | grep -q "^secret-manager/"; then
+        MODIFIED_DOCKERFILES=$(echo -e "${MODIFIED_DOCKERFILES}\nimages/gitlab-ci/Dockerfile" | sort -u | grep -v "^$")
+      fi
+
       if [ -z "$MODIFIED_DOCKERFILES" ]; then
         echo "No Dockerfiles were modified. Skipping build."
         exit 0
@@ -183,7 +187,7 @@ build-dockerfiles:
           DIR=$(dirname "$DOCKERFILE")
           IMAGE_NAME=$(basename "$DIR")
           echo "Building $DOCKERFILE as $REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest"
-          docker build -t "$REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest" "$DIR"
+          docker build -t "$REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest" -f "$DOCKERFILE" .
           docker push "$REGISTRY/$REGISTRY_PROJECT/$IMAGE_NAME:latest"
         fi
       done
@@ -191,6 +195,7 @@ build-dockerfiles:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
         - "**/Dockerfile"
+        - "secret-manager/**"
 
 apply:
   extends: .opentofu
@@ -396,6 +401,28 @@ update-kubeconfigs:
       changes:
         - clusters/**
         - secrets/**
+
+# ==================== GOLDEN IMAGE BUILD ====================
+
+build-golden-image:
+  stage: build
+  image: registry.homelabz.eu/library/golden-image-builder:latest
+  tags:
+    - k8s-gitlab-runner
+  variables:
+    K8S_VERSION: "1.33.0"
+    NAMESPACE: "vm-templates"
+    STORAGE_CLASS: "longhorn"
+    STORAGE_SIZE: "10Gi"
+    CDI_UPLOADPROXY_URL: "https://cdi-uploadproxy.toolz.homelabz.eu"
+    KUBECONFIG: /tmp/kubeconfig
+  script:
+    - ./scripts/build-golden-image.sh
+  timeout: 30m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: never
 
 # ==================== RELEASE ====================
 

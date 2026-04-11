@@ -38,6 +38,7 @@ Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platfor
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Security scanning (TruffleHog), conventional commits | MR |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Docker image builds for changed Dockerfiles | Merge to main |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Semantic release | Merge to main |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | KubeVirt golden image build (virt-customize + CDI upload) | Manual trigger |
 
 **OpenTofu Workflow Deep Dive** ([.gitlab-ci.yml](.gitlab-ci.yml)):
 

@@ -2,12 +2,12 @@
 
 ## Rules
 
-* YOU ARE FORBIDDEN TO COMMIT AND PUSH TO GITHUB (pushing to GitLab is allowed)
+* YOU ARE FORBIDDEN TO COMMIT AND PUSH TO GITHUB, GITHUB is our secondary origin
+* You are allowed to commit, push, open MRs on Gitlab that is our main origin
 * You are forbidden to add 'Claude' reference as author to anywhere (commits, docs, etc)
 * You don't put commentaries on code
 * You don't use emoticons
-* You're not allowed to commit and push to GitHub directly neither mention yourself (GitLab push is allowed)
-* You're not allowed to create/edit resources directly via kubectl/vault, you can only make these type of changes via OpenTofu or manually like this to test something
+* You're not allowed to create/edit resources directly via kubectl/vault, you can only make these type of changes via OpenTofu or manually like this to validate hypothesis and in case of validation success you put it on code
 * At the end of your task you always review what was done and repo README to properly update it
 * **IMPORTANT**: All secrets from `secrets/common/cluster-secret-store/secrets` are automatically available as environment variables on self-hosted runners (including VAULT_TOKEN, VAULT_ADDR, etc.). DO NOT explicitly set these in workflows unless absolutely necessary
 
@@ -20,7 +20,7 @@ Public portfolio repository showcasing production-grade infrastructure-as-code f
 - Cluster provisioning via Cluster API (clustermgmt K3s cluster as management cluster)
 - Multi-environment isolation using OpenTofu workspaces (prod, clustermgmt, toolz, home, observability)
 - Secrets: SOPS (age encryption) for git storage, HashiCorp Vault for runtime
-- Distributions: K3s (legacy single-node), kubeadm, RKE2 (via Cluster API)
+- Distributions: K3s (legacy single-node via tofu+ansible), kubeadm (via Cluster API), RKE2 (via Cluster API)
 - Dev environments: ephemeral clusters (created/destroyed per PR in app repos)
 
 **Security Posture:**
@@ -49,11 +49,32 @@ make validate
 
 ### Secrets Management
 ```bash
-# Create/edit/view secrets (SOPS-encrypted)
-./secret_new.sh path/to/secret.yaml
-./secret_edit.sh path/to/secret.yaml
-./secret_view.sh path/to/secret.yaml
+# Build the secret-manager binary
+make build-secret-manager
+
+# List secrets
+./secret-manager/secret-manager list
+./secret-manager/secret-manager list --env common --path cluster-secret-store/secrets
+
+# View a secret (all fields or specific field)
+./secret-manager/secret-manager get REDIS
+./secret-manager/secret-manager get REDIS REDIS_PASSWORD
+
+# Create or update a secret field
+./secret-manager/secret-manager set MY_SECRET MY_FIELD "my-value"
+./secret-manager/secret-manager set MY_SECRET ANOTHER_FIELD "value2"
+
+# Delete a secret
+./secret-manager/secret-manager delete MY_SECRET
+
+# Edit a secret in SOPS editor
+./secret-manager/secret-manager edit REDIS
+
+# Batch-encrypt all unencrypted secrets
+./secret-manager/secret-manager encrypt
 ```
+
+**Global flags:** `--env` (default: common), `--path` (default: cluster-secret-store/secrets), `--root` (default: auto-detect)
 
 **Note:** Make commands automatically decode SOPS secrets to `clusters/tmp/` before OpenTofu runs.
 
@@ -75,6 +96,15 @@ make pre-commit-update
 make build-kubeconfig-tool
 make update-kubeconfigs ENV=toolz
 ```
+
+### Golden Image Build (KubeVirt)
+```bash
+# Trigger manually from GitLab UI: Run Pipeline > set K8S_VERSION variable
+# Or run locally:
+K8S_VERSION=1.33.0 SSH_PRIVATE_KEY="$(cat ~/.ssh/id_ed25519)" ./scripts/build-golden-image.sh
+```
+
+Uses `virt-customize` to build Ubuntu 22.04 cloud image with Kubernetes packages, then uploads to CDI via `virtctl image-upload`. The builder Docker image is at `images/golden-image-builder/Dockerfile`.
 
 ## Key Patterns
 
@@ -132,7 +162,7 @@ All Helm charts are served from the local Harbor registry as OCI artifacts. Cont
 ### Secrets Lifecycle
 
 ```
-Developer → secret*.sh → SOPS YAML → Git → CI/CD (decrypt) → Vault → External Secrets → K8s → Pods
+Developer → secret-manager → SOPS YAML → Git → CI/CD (decrypt) → Vault → External Secrets → K8s → Pods
 ```
 
 **In OpenTofu:**
@@ -194,11 +224,14 @@ Cluster API runs on the `clustermgmt` K3s cluster (context: `clustermgmt`). Comm
 **Never commit unencrypted secrets.**
 
 ```bash
-# Create new secret
-./secret_new.sh secrets/path/to/secret.yaml
+# Create or update a secret
+./secret-manager/secret-manager set SECRET_NAME FIELD_NAME "value"
 
-# Reference in OpenTofu
-cd clusters && python3 load_secrets.py
+# View a secret
+./secret-manager/secret-manager get SECRET_NAME
+
+# Load secrets for OpenTofu
+cd clusters && ../secret-manager/secret-manager dump
 # Access via local.secrets_json
 ```
 
@@ -208,7 +241,7 @@ cd clusters && python3 load_secrets.py
 - `clusters/modules.tf` - Module orchestration
 - `clusters/variables.tf` - Workspace configs + Cluster API definitions
 - `clusters/providers.tf` - Provider configurations
-- `clusters/load_secrets.py` - SOPS decryption
+- `secret-manager/` - Go CLI for secrets CRUD and OpenTofu dump
 
 **Modules:**
 - `modules/base/` - Building blocks (helm, namespace, ingress, credentials, etc.)
@@ -265,7 +298,7 @@ make workspace  # List workspaces
 ## Troubleshooting
 
 **OpenTofu plan shows unwanted changes:**
-- Run: `cd clusters && python3 load_secrets.py`
+- Run: `cd clusters && ../secret-manager/secret-manager dump`
 - Verify workspace: `tofu workspace show`
 
 **Module not deploying:**
