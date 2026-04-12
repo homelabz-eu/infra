@@ -424,6 +424,50 @@ build-golden-image:
       when: manual
     - when: never
 
+# ==================== PROXMOX TEMPLATE BUILD ====================
+
+build-proxmox-template:
+  stage: build
+  image: registry.homelabz.eu/library/gitlab-ci:latest
+  tags:
+    - k8s-gitlab-runner
+  variables:
+    BUILD_TARGET: "ubuntu-2404"
+    PROXMOX_NODE: "node03"
+    PROXMOX_STORAGE_POOL: "data2"
+    PROXMOX_ISO_POOL: "local"
+    PROXMOX_BRIDGE: "vmbr0"
+    DISK_FORMAT: "raw"
+    BUILDER_VM_IP: "192.168.1.170"
+    IMAGE_BUILDER_REPO: "https://github.com/kubernetes-sigs/image-builder.git"
+    IMAGE_BUILDER_REF: "main"
+  before_script:
+    - mkdir -p ~/.sops/keys
+    - echo "$SOPS" > ~/.sops/keys/sops-key.txt
+    - chmod 600 ~/.sops/keys/sops-key.txt
+    - export SOPS_AGE_KEY_FILE=~/.sops/keys/sops-key.txt
+    - export AWS_ACCESS_KEY_ID="$rootUser"
+    - export AWS_SECRET_ACCESS_KEY="$rootPassword"
+  script:
+    - ./scripts/build-proxmox-template.sh
+  after_script:
+    - |
+      export AWS_ACCESS_KEY_ID="$rootUser"
+      export AWS_SECRET_ACCESS_KEY="$rootPassword"
+      cd images/proxmox-template-builder/tofu
+      tofu init -reconfigure
+      tofu destroy -auto-approve \
+        -var="proxmox_token_id=${PROXMOX_TOKEN_ID}" \
+        -var="proxmox_token_secret=${PROXMOX_SECRET}" \
+        -var="vm_ip=${BUILDER_VM_IP}" \
+        -var="target_node=${PROXMOX_NODE}" || true
+  timeout: 60m
+  resource_group: proxmox-template-build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: never
+
 # ==================== RELEASE ====================
 
 release:

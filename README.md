@@ -39,6 +39,7 @@ Self-hosted GitLab CE (`gitlab.homelabz.eu`) serves as the primary CI/CD platfor
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Docker image builds for changed Dockerfiles | Merge to main |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Semantic release | Merge to main |
 | [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | KubeVirt golden image build (virt-customize + CDI upload) | Manual trigger |
+| [.gitlab-ci.yml](.gitlab-ci.yml) | GitLab | Proxmox VM template build (image-builder + Packer) | Manual trigger |
 
 **OpenTofu Workflow Deep Dive** ([.gitlab-ci.yml](.gitlab-ci.yml)):
 
@@ -268,6 +269,35 @@ git commit -m "feat(proxmox): add k8s-observability VM [ansible k8s-observabilit
 
 This method provisioned all current clusters but is being phased out in favor of Cluster API for new deployments.
 
+### Proxmox VM Template Build
+
+Automated pipeline for building Proxmox VM templates using [kubernetes-sigs/image-builder](https://github.com/kubernetes-sigs/image-builder) and Packer. Templates are used by Cluster API for provisioning cluster nodes.
+
+**Architecture**: The pipeline dynamically provisions a temporary builder VM on Proxmox via OpenTofu, runs the Packer build inside it, then destroys the VM. This is necessary because Packer starts a local HTTP server for cloud-init autoinstall that the target VM must reach — requiring the builder to be on the same L2 network (192.168.1.x) as Proxmox.
+
+**Trigger**: Manual via GitLab web UI (`Run Pipeline` > set variables)
+
+**Configurable Variables**:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BUILD_TARGET` | `ubuntu-2404` | OS target: `ubuntu-2204`, `ubuntu-2404`, `ubuntu-2404-efi`, `rockylinux-9`, `flatcar` |
+| `PROXMOX_NODE` | `node03` | Proxmox node for template creation |
+| `PROXMOX_STORAGE_POOL` | `data2` | Storage pool for VM disks |
+| `DISK_FORMAT` | `raw` | Disk format (`raw` or `qcow2`) |
+| `BUILDER_VM_IP` | `192.168.1.170` | Temporary IP for builder VM |
+| `IMAGE_BUILDER_REF` | `main` | image-builder git ref to use |
+
+**Build Flow**:
+1. Provision builder VM on Proxmox (clone from `ubuntu24-cloudinit` template)
+2. Install dependencies (git, make, python3, packer, ansible)
+3. Clone image-builder repo and run `make build-proxmox-<target>`
+4. Packer creates VM, boots with autoinstall, provisions with Ansible, converts to template
+5. Destroy builder VM (guaranteed via trap handler + `after_script`)
+
+**Key Files**:
+- [scripts/build-proxmox-template.sh](scripts/build-proxmox-template.sh) — Orchestration script
+- [images/proxmox-template-builder/tofu/](images/proxmox-template-builder/tofu/) — OpenTofu config for builder VM
+
 ### Bootstrap Components
 
 OpenTofu automatically deploys platform services to clusters based on workspace configuration in [clusters/variables.tf](clusters/variables.tf):
@@ -469,9 +499,15 @@ infra/
 │   └── clusters/        # Cluster registration and repo secrets
 ├── secrets/             # SOPS-encrypted secrets (age encryption)
 │   └── common/cluster-secret-store/secrets/  # Cluster-wide secrets synced via External Secrets
+├── images/
+│   ├── gitlab-ci/       # CI runner Docker image (OpenTofu, Vault, Helm, SOPS)
+│   ├── golden-image-builder/ # KubeVirt golden image builder Docker image
+│   └── proxmox-template-builder/
+│       └── tofu/        # OpenTofu config for ephemeral builder VM
 ├── scripts/
 │   ├── helm-mirror.sh   # Mirror Helm charts to Harbor as OCI artifacts
-│   └── helm-charts.yaml # Helm chart inventory for mirroring
+│   ├── helm-charts.yaml # Helm chart inventory for mirroring
+│   └── build-proxmox-template.sh # Proxmox template build orchestrator
 ├── .gitlab-ci.yml       # GitLab CI/CD pipeline
 ├── .github/workflows/   # GitHub Actions (disabled, kept as reference)
 ├── Makefile             # Development commands (plan, apply, init, fmt, validate)
