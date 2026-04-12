@@ -1,6 +1,6 @@
 module "local_path_provisioner" {
   count  = contains(local.workload, "local-path-provisioner") ? 1 : 0
-  source = "../modules/apps/local-path-provisioner"
+  source = "../modules/cluster/local-path-provisioner"
 
   namespace                 = "local-path-storage"
   storage_class_name        = "local-path"
@@ -9,7 +9,7 @@ module "local_path_provisioner" {
 
 module "metrics_server" {
   count  = contains(local.workload, "metrics-server") ? 1 : 0
-  source = "../modules/apps/metrics-server"
+  source = "../modules/cluster/metrics-server"
 
   namespace              = "kube-system"
   enable_service_monitor = contains(local.workload, "observability-box")
@@ -17,7 +17,7 @@ module "metrics_server" {
 
 module "metallb" {
   count  = contains(local.workload, "metallb") ? 1 : 0
-  source = "../modules/apps/metallb"
+  source = "../modules/networking/metallb"
 
   namespace      = "metallb-system"
   chart_version  = "0.14.9"
@@ -33,7 +33,7 @@ module "metallb" {
 
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../modules/apps/externaldns"
+  source = "../modules/networking/externaldns"
 
   deployment_name      = "external-dns-pihole"
   dns_provider         = "pihole"
@@ -63,7 +63,7 @@ module "externaldns" {
 
 module "externaldns_cloudflare" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../modules/apps/externaldns"
+  source = "../modules/networking/externaldns"
 
   crds_installed           = var.config[terraform.workspace].crds_installed
   deployment_name          = "external-dns-cloudflare"
@@ -94,7 +94,7 @@ moved {
 }
 module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
-  source = "../modules/apps/certmanager"
+  source = "../modules/networking/certmanager"
 
   install_crd       = var.config[terraform.workspace].crds_installed
   issuer_type       = "acme"
@@ -103,7 +103,7 @@ module "cert_manager" {
 
 module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
-  source = "../modules/apps/external-secrets"
+  source = "../modules/security/external-secrets"
 
   install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
@@ -120,7 +120,7 @@ module "external_secrets" {
 
 module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
-  source = "../modules/apps/github-runner"
+  source = "../modules/cicd/github-runner"
 
   github_token            = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
   install_crd             = var.config[terraform.workspace].crds_installed
@@ -142,13 +142,13 @@ module "gitlab_runner" {
 
 module "ingress_nginx" {
   count  = contains(local.workload, "ingress_nginx") ? 1 : 0
-  source = "../modules/apps/ingress-nginx"
+  source = "../modules/networking/ingress-nginx"
 
 }
 
 module "istio" {
   count  = contains(local.workload, "istio") ? 1 : 0
-  source = "../modules/apps/istio"
+  source = "../modules/networking/istio"
 
   gateway_service_type = "LoadBalancer"
 
@@ -169,7 +169,7 @@ module "istio" {
 
 module "argocd" {
   count  = contains(local.workload, "argocd") ? 1 : 0
-  source = "../modules/apps/argocd"
+  source = "../modules/cicd/argocd"
 
   namespace              = "argocd"
   install_argocd         = terraform.workspace == "toolz"
@@ -190,7 +190,7 @@ module "argocd" {
 
 module "oracle_backup" {
   count  = contains(keys(var.config[terraform.workspace]), "oracle_backup") ? 1 : 0
-  source = "../modules/apps/oracle-backup"
+  source = "../modules/data/oracle-backup"
 
   namespace        = "oracle-backup"
   create_namespace = true
@@ -234,13 +234,13 @@ module "oracle_backup" {
 
 module "registry" {
   count  = contains(local.workload, "registry") ? 1 : 0
-  source = "../modules/apps/registry"
+  source = "../modules/data/registry"
 
 }
 
 module "vault" {
   count                      = contains(local.workload, "vault") ? 1 : 0
-  source                     = "../modules/apps/vault"
+  source                     = "../modules/security/vault"
   initial_secrets            = local.vault_secrets
   ingress_class_name         = try(var.config[terraform.workspace].argocd_ingress_class, "traefik")
   data_storage_storage_class = try(var.config[terraform.workspace].vault_storage_class, "local-path")
@@ -257,7 +257,7 @@ module "vault" {
 
 module "observability" {
   count  = contains(local.workload, "observability") ? 1 : 0
-  source = "../modules/apps/observability"
+  source = "../modules/observability/observability"
 
   minio_rootPassword = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
   install_crd        = var.config[terraform.workspace].crds_installed
@@ -265,7 +265,7 @@ module "observability" {
 
 module "observability-box" {
   count  = contains(local.workload, "observability-box") ? 1 : 0
-  source = "../modules/apps/observability-box"
+  source = "../modules/observability/observability-box"
 
   prometheus_namespaces     = try(var.config[terraform.workspace].prometheus_namespaces, [])
   prometheus_memory_limit   = try(var.config[terraform.workspace].prometheus_memory_limit, "1024Mi")
@@ -275,7 +275,7 @@ module "observability-box" {
 
 module "redis" {
   count               = contains(local.workload, "redis") ? 1 : 0
-  source              = "../modules/apps/redis"
+  source              = "../modules/data/redis"
   ingress_enabled     = try(var.config[terraform.workspace].redis.ingress_enabled, true)
   ingress_class_name  = var.config[terraform.workspace].redis.ingress_class_name
   ingress_annotations = var.config[terraform.workspace].redis.ingress_annotations
@@ -291,13 +291,13 @@ module "redis" {
 
 module "nats" {
   count  = contains(local.workload, "nats") ? 1 : 0
-  source = "../modules/apps/nats"
+  source = "../modules/data/nats"
 
 }
 
 module "harbor_replication" {
   count  = contains(local.workload, "harbor_replication") ? 1 : 0
-  source = "../modules/apps/harbor-replication"
+  source = "../modules/data/harbor-replication"
 
   registries = {
     dockerhub = {
@@ -535,7 +535,7 @@ module "harbor_replication" {
 
 module "immich" {
   count  = contains(local.workload, "immich") ? 1 : 0
-  source = "../modules/apps/immich"
+  source = "../modules/media/immich"
 
   redis         = "redis.homelabz.eu"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
@@ -549,7 +549,7 @@ module "immich" {
 
 module "kiwix" {
   count  = contains(local.workload, "kiwix") ? 1 : 0
-  source = "../modules/apps/kiwix"
+  source = "../modules/media/kiwix"
 
   ingress_enabled = true
   ingress_host    = try(var.config[terraform.workspace].kiwix.ingress_host, "")
@@ -557,7 +557,7 @@ module "kiwix" {
 
 module "paperless_ngx" {
   count  = contains(local.workload, "paperless_ngx") ? 1 : 0
-  source = "../modules/apps/paperless-ngx"
+  source = "../modules/media/paperless-ngx"
 
   ingress_enabled = true
   ingress_host    = try(var.config[terraform.workspace].paperless_ngx.ingress_host, "")
@@ -569,13 +569,13 @@ module "paperless_ngx" {
 
 module "kubevirt_operator" {
   count  = contains(local.workload, "kubevirt") ? 1 : 0
-  source = "../modules/apps/kubevirt-operator"
+  source = "../modules/cluster/kubevirt-operator"
 
 }
 
 module "kubevirt" {
   count  = contains(local.workload, "kubevirt") ? 1 : 0
-  source = "../modules/apps/kubevirt"
+  source = "../modules/cluster/kubevirt"
 
   namespace          = "kubevirt"
   create_kubevirt_cr = true
@@ -594,7 +594,7 @@ module "kubevirt" {
 
 module "longhorn" {
   count  = contains(local.workload, "longhorn") ? 1 : 0
-  source = "../modules/apps/longhorn"
+  source = "../modules/data/longhorn"
 
   replica_count      = 1
   ingress_host       = try(var.config[terraform.workspace].longhorn.ingress_host, "longhorn.homelabz.eu")
@@ -607,7 +607,7 @@ module "longhorn" {
 
 module "clusterapi_operator" {
   count  = contains(local.workload, "clusterapi-operator") ? 1 : 0
-  source = "../modules/apps/clusterapi-operator"
+  source = "../modules/cluster/clusterapi-operator"
 
   enable_core_provider      = true
   enable_talos_provider     = true
@@ -625,7 +625,7 @@ module "clusterapi_operator" {
 
 module "kubernetes_clusters" {
   count  = contains(keys(var.config[terraform.workspace]), "kubernetes-cluster") ? 1 : 0
-  source = "../modules/apps/kubernetes-cluster"
+  source = "../modules/cluster/kubernetes-cluster"
 
   clusters = try(var.config[terraform.workspace].kubernetes-cluster, [{}])
 
@@ -651,7 +651,7 @@ data "vault_kv_secret_v2" "postgres_ca" {
 
 module "teleport-agent" {
   count  = contains(local.workload, "teleport-agent") ? 1 : 0
-  source = "../modules/apps/teleport-agent"
+  source = "../modules/security/teleport-agent"
 
   kubernetes_cluster_name = terraform.workspace
   join_token              = local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT"]["JOIN_TOKEN"]
@@ -672,7 +672,7 @@ module "teleport-agent" {
 
 module "cloudnative_pg_operator" {
   count  = contains(local.workload, "cloudnative-pg-operator") ? 1 : 0
-  source = "../modules/apps/cloudnative-postgres-operator"
+  source = "../modules/data/cloudnative-postgres-operator"
 
   namespace        = "cnpg-system"
   create_namespace = true
@@ -694,7 +694,7 @@ resource "kubernetes_secret" "teleport_postgres_password" {
 
 module "postgres_cnpg" {
   count  = contains(local.workload, "postgres-cnpg") ? 1 : 0
-  source = "../modules/apps/cloudnative-postgres"
+  source = "../modules/data/cloudnative-postgres"
 
   cluster_name     = "postgres"
   namespace        = "default"
@@ -792,7 +792,7 @@ module "postgres_databases" {
 
 module "cluster_autoscaler" {
   count  = contains(local.workload, "cluster-autoscaler") ? 1 : 0
-  source = "../modules/apps/cluster-autoscaler"
+  source = "../modules/cluster/cluster-autoscaler"
 
   managed_clusters = var.config[terraform.workspace].cluster_autoscaler_managed_clusters
   chart_version    = lookup(var.config[terraform.workspace], "cluster_autoscaler_chart_version", "9.54.0")
@@ -814,12 +814,12 @@ module "cluster_autoscaler" {
 
 module "falco" {
   count  = contains(local.workload, "falco") ? 1 : 0
-  source = "../modules/apps/falco"
+  source = "../modules/security/falco"
 }
 
 module "authentik" {
   count  = contains(local.workload, "authentik") ? 1 : 0
-  source = "../modules/apps/authentik"
+  source = "../modules/security/authentik"
 
   domain = var.config[terraform.workspace].authentik.domain
 
@@ -838,7 +838,7 @@ module "authentik" {
 
 module "ollama" {
   count  = contains(local.workload, "ollama") ? 1 : 0
-  source = "../modules/apps/ollama"
+  source = "../modules/ai/ollama"
 
   ingress_enabled    = true
   ingress_host       = try(var.config[terraform.workspace].ollama.ingress_host, "")
@@ -874,12 +874,12 @@ module "ollama" {
 
 module "media_storage" {
   count  = contains(local.workload, "media_storage") ? 1 : 0
-  source = "../modules/apps/media-storage"
+  source = "../modules/data/media-storage"
 }
 
 module "prowlarr" {
   count  = contains(local.workload, "prowlarr") ? 1 : 0
-  source = "../modules/apps/prowlarr"
+  source = "../modules/media/prowlarr"
 
   namespace        = "media"
   create_namespace = false
@@ -891,7 +891,7 @@ module "prowlarr" {
 
 module "radarr" {
   count  = contains(local.workload, "radarr") ? 1 : 0
-  source = "../modules/apps/radarr"
+  source = "../modules/media/radarr"
 
   namespace        = "media"
   create_namespace = false
@@ -904,7 +904,7 @@ module "radarr" {
 
 module "sonarr" {
   count  = contains(local.workload, "sonarr") ? 1 : 0
-  source = "../modules/apps/sonarr"
+  source = "../modules/media/sonarr"
 
   namespace        = "media"
   create_namespace = false
@@ -917,7 +917,7 @@ module "sonarr" {
 
 module "qbittorrent" {
   count  = contains(local.workload, "qbittorrent") ? 1 : 0
-  source = "../modules/apps/qbittorrent"
+  source = "../modules/media/qbittorrent"
 
   namespace        = "media"
   create_namespace = false
@@ -930,12 +930,35 @@ module "qbittorrent" {
 
 module "plex" {
   count  = contains(local.workload, "plex") ? 1 : 0
-  source = "../modules/apps/plex"
+  source = "../modules/media/plex"
 
   namespace        = "media"
   create_namespace = false
   ingress_enabled  = true
   ingress_host     = try(var.config[terraform.workspace].plex.ingress_host, "")
+  media_pvc_name   = "media-data"
+
+  depends_on = [module.media_storage]
+}
+
+module "flaresolverr" {
+  count  = contains(local.workload, "flaresolverr") ? 1 : 0
+  source = "../modules/media/flaresolverr"
+
+  namespace        = "media"
+  create_namespace = false
+
+  depends_on = [module.media_storage]
+}
+
+module "bazarr" {
+  count  = contains(local.workload, "bazarr") ? 1 : 0
+  source = "../modules/media/bazarr"
+
+  namespace        = "media"
+  create_namespace = false
+  ingress_enabled  = true
+  ingress_host     = try(var.config[terraform.workspace].bazarr.ingress_host, "")
   media_pvc_name   = "media-data"
 
   depends_on = [module.media_storage]

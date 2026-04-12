@@ -11,7 +11,7 @@ resource "kubernetes_labels" "default_namespace" {
 
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../../modules/apps/externaldns"
+  source = "../../modules/networking/externaldns"
 
   deployment_name      = "external-dns-pihole"
   dns_provider         = "pihole"
@@ -40,7 +40,7 @@ module "externaldns" {
 
 module "externaldns_cloudflare" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../../modules/apps/externaldns"
+  source = "../../modules/networking/externaldns"
 
   crds_installed           = var.config[terraform.workspace].crds_installed
   deployment_name          = "external-dns-cloudflare"
@@ -71,7 +71,7 @@ moved {
 }
 module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
-  source = "../../modules/apps/certmanager"
+  source = "../../modules/networking/certmanager"
 
   install_crd = var.config[terraform.workspace].crds_installed
   issuer_type = "acme"
@@ -83,7 +83,7 @@ module "cert_manager" {
 
 module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
-  source = "../../modules/apps/external-secrets"
+  source = "../../modules/security/external-secrets"
 
   install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
@@ -99,7 +99,7 @@ module "external_secrets" {
 
 module "argocd" {
   count  = contains(local.workload, "argocd") ? 1 : 0
-  source = "../../modules/apps/argocd"
+  source = "../../modules/cicd/argocd"
 
   namespace              = "argocd"
   install_argocd         = terraform.workspace == "toolz"
@@ -118,7 +118,7 @@ module "argocd" {
 
 module "observability-box" {
   count  = contains(local.workload, "observability-box") ? 1 : 0
-  source = "../../modules/apps/observability-box"
+  source = "../../modules/observability/observability-box"
 
   prometheus_namespaces     = try(var.config[terraform.workspace].prometheus_namespaces, [])
   prometheus_memory_limit   = try(var.config[terraform.workspace].prometheus_memory_limit, "1024Mi")
@@ -134,7 +134,7 @@ data "vault_kv_secret_v2" "postgres_ca" {
 
 module "cloudnative_pg_operator" {
   count  = contains(local.workload, "cloudnative-pg-operator") ? 1 : 0
-  source = "../../modules/apps/cloudnative-postgres-operator"
+  source = "../../modules/data/cloudnative-postgres-operator"
 
   namespace        = "cnpg-system"
   create_namespace = true
@@ -143,7 +143,7 @@ module "cloudnative_pg_operator" {
 
 module "postgres_cnpg" {
   count  = contains(local.workload, "postgres-cnpg") ? 1 : 0
-  source = "../../modules/apps/cloudnative-postgres"
+  source = "../../modules/data/cloudnative-postgres"
 
   cluster_name     = "postgres"
   namespace        = "default"

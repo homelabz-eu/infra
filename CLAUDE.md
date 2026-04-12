@@ -2,14 +2,12 @@
 
 ## Rules
 
-* YOU ARE FORBIDDEN TO COMMIT AND PUSH TO GITHUB, GITHUB is our secondary origin
-* You are allowed to commit, push, open MRs on Gitlab that is our main origin
-* You are forbidden to add 'Claude' reference as author to anywhere (commits, docs, etc)
-* You don't put commentaries on code
-* You don't use emoticons
-* You're not allowed to create/edit resources directly via kubectl/vault, you can only make these type of changes via OpenTofu or manually like this to validate hypothesis and in case of validation success you put it on code
-* At the end of your task you always review what was done and repo README to properly update it
-* **IMPORTANT**: All secrets from `secrets/common/cluster-secret-store/secrets` are automatically available as environment variables on self-hosted runners (including VAULT_TOKEN, VAULT_ADDR, etc.). DO NOT explicitly set these in workflows unless absolutely necessary
+* commit, push, open MRs on Gitlab that is our main origin
+* User is the reference as author to anywhere (commits, docs, etc)
+* write pure code
+* for hypothesis test/validation it is possible to create/edit resources directly via kubectl/vault and in case of validation success you put it on code, manual changes are only allowed to hypothesis test/validation.
+* At the end of task always review what was done and repo README to properly update it
+* **IMPORTANT**: All secrets are on `secrets/common/cluster-secret-store/secrets` and are automatically available as environment variables on self-hosted runners (including VAULT_TOKEN, VAULT_ADDR, etc.).
 
 ## Repository Overview
 
@@ -17,16 +15,16 @@ Public portfolio repository showcasing production-grade infrastructure-as-code f
 
 **Key Architecture:**
 - Two-tier OpenTofu structure: base modules + application modules
-- Cluster provisioning via Cluster API (clustermgmt K3s cluster as management cluster)
-- Multi-environment isolation using OpenTofu workspaces (prod, clustermgmt, toolz, home, observability)
+- Cluster provisioning via Cluster API (clustermgmt K3s cluster as management cluster) or creating VM via 'init' tofu and running ansible playbook.
+- Multi-environment isolation using OpenTofu workspaces (prod, clustermgmt, toolz, home, observability, media)
 - Secrets: SOPS (age encryption) for git storage, HashiCorp Vault for runtime
-- Distributions: K3s (legacy single-node via tofu+ansible), kubeadm (via Cluster API), RKE2 (via Cluster API)
+- Distributions: K3s (legacy single-node via tofu+ansible, or via cluster API), kubeadm (via Cluster API), RKE2 (via Cluster API)
 - Dev environments: ephemeral clusters (created/destroyed per PR in app repos)
 
 **Security Posture:**
 - ✅ All secrets SOPS-encrypted (age key: `age15vvdhaj90s3nru2zw4p2a9yvdrv6alfg0d6ea6zxpx3eagyqfqlsgdytsp`)
 - ✅ No credentials in git history (verified clean)
-- ✅ Externally-usable credentials (SSH keys, GitHub PAT, Cloudflare token) protected
+- ✅ Externally-usable credentials (SSH keys, GitHub PAT, Cloudflare token, Oracle key) protected
 - ⚠️ Public repository - workflow logs visible (internal details only, homelab is private)
 
 ## Common Commands
@@ -45,6 +43,11 @@ make apply
 make init
 make fmt
 make validate
+make workspace                   # List all workspaces
+make create-workspace ENV=<env>  # Create a new workspace
+make destroy ENV=<env>           # Destroy resources (prompts confirmation)
+make state-clean ENV=<env>       # Remove resources from state without destroying infra
+make module-test MODULE=<name>   # Test a specific module
 ```
 
 ### Secrets Management
@@ -78,6 +81,15 @@ make build-secret-manager
 
 **Note:** Make commands automatically decode SOPS secrets to `clusters/tmp/` before OpenTofu runs.
 
+### Ephemeral Cluster Commands
+```bash
+make ephemeral-init                         # Initialize OpenTofu for ephemeral clusters
+make ephemeral-plan WORKSPACE=<name>        # Plan ephemeral infrastructure
+make ephemeral-apply WORKSPACE=<name>       # Apply ephemeral infrastructure (4 phases)
+make ephemeral-destroy WORKSPACE=<name>     # Destroy ephemeral infrastructure
+make ephemeral-workspace                    # List ephemeral workspaces
+```
+
 ### Pre-Commit Hooks
 ```bash
 # Install pre-commit framework and hooks
@@ -92,8 +104,8 @@ make pre-commit-update
 
 ### Cluster Management (Cluster API)
 ```bash
-# Update Talos kubeconfigs in Vault
-make build-kubeconfig-tool
+# Update cluster kubeconfigs in Vault
+make update-kubeconfigs
 make update-kubeconfigs ENV=toolz
 ```
 
@@ -110,39 +122,28 @@ Uses `virt-customize` to build Ubuntu 22.04 cloud image with Kubernetes packages
 
 ### Workspace-Based Environments
 
-Each workspace represents an environment. Configuration in `clusters/variables.tf`:
+Each workspace represents an environment. Workload lists and per-workspace config are defined in `clusters/clusters.tf`. The pattern for conditional module deployment is:
 
 ```hcl
-variable "workload" {
-  default = {
-    prod = ["externaldns", "cert_manager", "istio", "argocd", ...]
-    toolz = ["redis", "vault", "gitlab_runner", "argocd", ...]
-  }
-}
-
-variable "config" {
-  default = {
-    prod = {
-      kubernetes_context = "prod"
-      argocd_domain = "argocd.homelabz.eu"
-    }
-  }
+module "module_name" {
+  count  = contains(local.workload, "module_name") ? 1 : 0
+  source = "../modules/<domain>/module-name"
 }
 ```
 
-**Pattern:** Modules check `contains(local.workload, "module_name")` for conditional deployment.
+Available domains: `ai`, `cicd`, `cluster`, `data`, `media`, `networking`, `observability`, `security`
 
 ### Cluster API Provisioning (Current Standard)
 
-1. Define cluster in `clusters/variables.tf` under `clustermgmt` workspace (kubernetes-cluster list)
+1. Define cluster in `clusters/clusters.tf` under `clustermgmt` workspace (kubernetes-cluster list)
 2. OpenTofu creates Cluster API resources on clustermgmt K3s cluster (context: `clustermgmt`)
 3. Cluster API provisions VMs and bootstraps Kubernetes
-4. `cicd-update-kubeconfig` tool extracts kubeconfigs to Vault
+4. CI/CD (`update-kubeconfigs` job) waits for cluster readiness, then extracts kubeconfigs to Vault via `clusters/scripts/update_kubeconfig_sops.sh`
 5. Cluster available immediately to OpenTofu and CI/CD
 
 **Key Files:**
 - `.gitlab-ci.yml` - Main deployment pipeline
-- `modules/apps/kubernetes-cluster/` - Polymorphic cluster module (talos, kubeadm, rke2, k3s)
+- `modules/cluster/kubernetes-cluster/` - Polymorphic cluster module (talos, kubeadm, rke2, k3s)
 
 ### Local Harbor Registry for Charts and Images
 
@@ -177,23 +178,19 @@ vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"][
 
 ### Adding a New Module
 
-1. Create in `modules/apps/module-name/`
+1. Create in `modules/<domain>/module-name/` (domains: `ai`, `cicd`, `cluster`, `data`, `media`, `networking`, `observability`, `security`)
 2. Add to `clusters/modules.tf`:
    ```hcl
    module "module_name" {
      count  = contains(local.workload, "module_name") ? 1 : 0
-     source = "../modules/apps/module-name"
+     source = "../modules/<domain>/module-name"
    }
    ```
-3. Add to workspace in `clusters/variables.tf`:
-   ```hcl
-   workload = { prod = ["existing", "module_name"] }
-   config = { prod = { module_name = {} } }
-   ```
+3. Add to the appropriate workspace workload list and config map in `clusters/clusters.tf`
 
 ### Adding a New Cluster (Cluster API)
 
-Add to `clusters/variables.tf` under the `clustermgmt` workspace `kubernetes-cluster` list:
+Add to `clusters/clusters.tf` under the `clustermgmt` workspace `kubernetes-cluster` list:
 ```hcl
 config = {
   clustermgmt = {
@@ -219,33 +216,25 @@ config = {
 
 Cluster API runs on the `clustermgmt` K3s cluster (context: `clustermgmt`). Commit changes - CI/CD handles provisioning.
 
-### Handling Secrets
-
-**Never commit unencrypted secrets.**
-
-```bash
-# Create or update a secret
-./secret-manager/secret-manager set SECRET_NAME FIELD_NAME "value"
-
-# View a secret
-./secret-manager/secret-manager get SECRET_NAME
-
-# Load secrets for OpenTofu
-cd clusters && ../secret-manager/secret-manager dump
-# Access via local.secrets_json
-```
-
 ## Important File Locations
 
 **OpenTofu:**
+- `clusters/clusters.tf` - Workspace workload lists, config maps, and Cluster API cluster definitions
 - `clusters/modules.tf` - Module orchestration
-- `clusters/variables.tf` - Workspace configs + Cluster API definitions
+- `clusters/variables.tf` - Variable declarations and provider configs
 - `clusters/providers.tf` - Provider configurations
 - `secret-manager/` - Go CLI for secrets CRUD and OpenTofu dump
 
 **Modules:**
 - `modules/base/` - Building blocks (helm, namespace, ingress, credentials, etc.)
-- `modules/apps/` - Applications (argocd, vault, postgres, istio, cert_manager, etc.)
+- `modules/ai/` - AI/ML workloads (ollama)
+- `modules/cicd/` - CI/CD (argocd, github-runner, gitlab-runner)
+- `modules/cluster/` - Cluster infrastructure (kubernetes-cluster, kubevirt, clusterapi-operator, etc.)
+- `modules/data/` - Stateful data services (postgres, redis, minio, nats, longhorn, harbor, etc.)
+- `modules/media/` - Media and home apps (plex, *arr stack, immich, paperless-ngx, etc.)
+- `modules/networking/` - Ingress, DNS, mesh, certs (ingress-nginx, externaldns, certmanager, istio, metallb)
+- `modules/observability/` - Monitoring and alerting (observability, observability-box)
+- `modules/security/` - Secrets, identity, access (vault, external-secrets, authentik, teleport-agent, falco)
 
 **CI/CD:**
 - `.gitlab-ci.yml` - Main deployment pipeline (OpenTofu, Ansible, Docker builds, releases)
@@ -253,6 +242,10 @@ cd clusters && ../secret-manager/secret-manager dump
 **Secrets:**
 - `secrets/` - SOPS-encrypted secrets (all environments)
 - `.sops.yaml` - Encryption rules
+
+**Ephemeral clusters:**
+- `ephemeral-clusters/opentofu/` - OpenTofu config for ephemeral PR clusters
+- `clusters/scripts/` - Kubeconfig management scripts (`update_kubeconfig_sops.sh`, etc.)
 
 ## State Management
 
@@ -271,8 +264,9 @@ make workspace  # List workspaces
 - Management cluster: `clustermgmt` K3s on NODE02 — runs Cluster API only (context: `clustermgmt`, OpenTofu workspace: `clustermgmt`)
 - Workloads cluster: `toolz` RKE2 on NODE03 — vault, harbor, argocd, gitlab-runner, nats, etc. (context: `toolz`, OpenTofu workspace: `toolz`)
 - VM services: GitLab CE (192.168.1.102), MinIO (192.168.1.103), PostgreSQL+Redis (192.168.1.100)
+- Media cluster: `media` — plex, *arr stack, qbittorrent (context: `media`, OpenTofu workspace: `media`)
 - Legacy K3s: home, observability (Ansible-managed)
-- Cluster API managed: prod (kubeadm), toolz (RKE2)
+- Cluster API managed: prod (kubeadm), toolz (RKE2), media
 - Network: 192.168.1.0/24 (private, not internet-exposed)
 
 ## Security Notes
@@ -281,7 +275,7 @@ make workspace  # List workspaces
 - Repository is PUBLIC for portfolio showcase
 - Homelab is PRIVATE (192.168.x.x not internet-routable)
 - Externally-usable credentials (SSH keys, Cloudflare token) are protected
-- GitHub workflow logs are public but contain only internal details
+- GitLab CI/CD pipeline logs are public but contain only internal details
 
 **Best Practices Demonstrated:**
 - SOPS encryption for all secrets
@@ -302,13 +296,13 @@ make workspace  # List workspaces
 - Verify workspace: `tofu workspace show`
 
 **Module not deploying:**
-- Check `workload` list in `clusters/variables.tf`
+- Check `workload` list in `clusters/clusters.tf`
 - Verify workspace: `tofu workspace select <env>`
 
 **Kubeconfig not in Vault (Cluster API):**
 - Verify cluster ready: `kubectl --context clustermgmt get cluster -n <namespace> <cluster>`
 - Check secret: `kubectl --context clustermgmt get secret -n <namespace> <cluster>-kubeconfig` # pragma: allowlist secret
-- Run manually: `./cicd-update-kubeconfig --cluster-name <cluster> --namespace <namespace> --vault-path kv/cluster-secret-store/secrets --vault-addr $VAULT_ADDR --management-context clustermgmt`
+- Run kubeconfig update manually: `make update-kubeconfigs ENV=<env>`
 
 **CRD chicken-and-egg:**
 - Set `create_default_gateway = false` or `install_crd = false` initially
@@ -328,6 +322,5 @@ Always test in order:
 ## References
 
 - [README.md](README.md) - Comprehensive architecture
-- [Security Audit](.claude/plans/lovely-foraging-otter.md) - Latest security assessment
-- [docs/SECRETS_ROTATION.md](docs/SECRETS_ROTATION.md) - Secret rotation procedures
-- [cicd-update-kubeconfig/README.md](cicd-update-kubeconfig/README.md) - Kubeconfig tool docs
+- [clusters/clusters.tf](clusters/clusters.tf) - Workspace configs, workload lists, Cluster API cluster definitions
+- [.gitlab-ci.yml](.gitlab-ci.yml) - CI/CD pipeline definition

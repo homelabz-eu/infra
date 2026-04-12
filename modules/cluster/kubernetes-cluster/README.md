@@ -28,7 +28,7 @@ This module uses a **facade pattern** with type-specific submodules:
 
 ```hcl
 module "kubernetes_clusters" {
-  source = "../modules/apps/kubernetes-cluster"
+  source = "../modules/cluster/kubernetes-cluster"
 
   clusters = [
     {
@@ -69,7 +69,7 @@ module "kubernetes_clusters" {
 
 ## Migration from proxmox-cluster
 
-This module replaces `modules/apps/proxmox-cluster` with a cleaner architecture.
+This module replaces `modules/cluster/proxmox-cluster` with a cleaner architecture.
 
 **Interface compatibility**: The `clusters` variable structure is identical, making migration straightforward.
 

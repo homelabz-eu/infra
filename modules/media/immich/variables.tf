@@ -21,7 +21,7 @@ variable "repository" {
   default = "oci://registry.homelabz.eu/helm-charts"
 }
 variable "chart_version" {
-  default = "0.10.3"
+  default = "0.11.1"
 }
 variable "timeout" {
   default = "300"
