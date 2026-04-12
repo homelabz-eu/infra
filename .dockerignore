@@ -1,0 +1,5 @@
+.git
+clusters/tmp
+*.tfplan
+*.tfstate
+private*

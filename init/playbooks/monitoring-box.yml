@@ -1,0 +1,377 @@
+---
+- name: VM Monitoring Box
+  hosts: "{{ target_hosts | default('monitoring') }}"
+  become: true
+  gather_facts: yes
+  vars:
+    node_exporter_version: "1.9.0"
+    prometheus_version: "3.2.1"
+    promtail_version: "3.4.2"
+    remote_write_url: "https://prometheus.homelabz.eu/api/v1/write"
+    loki_url: "https://loki.homelabz.eu/loki/api/v1/push"
+
+  handlers:
+    - name: restart node_exporter
+      systemd:
+        name: node_exporter
+        state: restarted
+        daemon_reload: true
+
+    - name: restart prometheus
+      systemd:
+        name: prometheus
+        state: restarted
+        daemon_reload: true
+
+    - name: restart promtail
+      systemd:
+        name: promtail
+        state: restarted
+        daemon_reload: true
+
+  tasks:
+    # --- Node Exporter ---
+
+    - name: Create node_exporter system user
+      user:
+        name: node_exporter
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+      tags: [install, node-exporter]
+
+    - name: Check node_exporter version
+      command: /usr/local/bin/node_exporter --version
+      register: node_exporter_installed
+      changed_when: false
+      failed_when: false
+      tags: [install, node-exporter, upgrade]
+
+    - name: Download node_exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        mode: '0644'
+      when: node_exporter_installed.rc != 0 or node_exporter_version not in (node_exporter_installed.stderr | default(''))
+      tags: [install, node-exporter, upgrade]
+
+    - name: Extract node_exporter
+      unarchive:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+      when: node_exporter_installed.rc != 0 or node_exporter_version not in (node_exporter_installed.stderr | default(''))
+      tags: [install, node-exporter, upgrade]
+
+    - name: Install node_exporter binary
+      copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: /usr/local/bin/node_exporter
+        mode: '0755'
+        owner: root
+        group: root
+        remote_src: true
+      notify: restart node_exporter
+      when: node_exporter_installed.rc != 0 or node_exporter_version not in (node_exporter_installed.stderr | default(''))
+      tags: [install, node-exporter, upgrade]
+
+    - name: Deploy node_exporter systemd unit
+      copy:
+        content: |
+          [Unit]
+          Description=Prometheus Node Exporter
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter \
+            --collector.systemd \
+            --collector.processes
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/node_exporter.service
+        mode: '0644'
+      notify: restart node_exporter
+      tags: [install, node-exporter, config]
+
+    - name: Enable and start node_exporter
+      systemd:
+        name: node_exporter
+        enabled: true
+        state: started
+        daemon_reload: true
+      tags: [install, node-exporter, service]
+
+    - name: Wait for node_exporter to be ready
+      wait_for:
+        port: 9100
+        host: localhost
+        delay: 2
+        timeout: 30
+      tags: [install, node-exporter, service]
+
+    # --- Prometheus ---
+
+    - name: Create prometheus system user
+      user:
+        name: prometheus
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+      tags: [install, prometheus]
+
+    - name: Create prometheus directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: prometheus
+        group: prometheus
+        mode: '0750'
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
+      tags: [install, prometheus]
+
+    - name: Check prometheus version
+      command: /usr/local/bin/prometheus --version
+      register: prometheus_installed
+      changed_when: false
+      failed_when: false
+      tags: [install, prometheus, upgrade]
+
+    - name: Download prometheus
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
+        mode: '0644'
+      when: prometheus_installed.rc != 0 or prometheus_version not in (prometheus_installed.stdout | default(''))
+      tags: [install, prometheus, upgrade]
+
+    - name: Extract prometheus
+      unarchive:
+        src: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+      when: prometheus_installed.rc != 0 or prometheus_version not in (prometheus_installed.stdout | default(''))
+      tags: [install, prometheus, upgrade]
+
+    - name: Install prometheus binaries
+      copy:
+        src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        mode: '0755'
+        owner: root
+        group: root
+        remote_src: true
+      loop:
+        - prometheus
+        - promtool
+      notify: restart prometheus
+      when: prometheus_installed.rc != 0 or prometheus_version not in (prometheus_installed.stdout | default(''))
+      tags: [install, prometheus, upgrade]
+
+    - name: Deploy prometheus configuration
+      template:
+        src: ../templates/prometheus-vm.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+        mode: '0640'
+      notify: restart prometheus
+      tags: [install, prometheus, config]
+
+    - name: Deploy prometheus systemd unit
+      copy:
+        content: |
+          [Unit]
+          Description=Prometheus
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus \
+            --config.file=/etc/prometheus/prometheus.yml \
+            --storage.tsdb.path=/var/lib/prometheus \
+            --storage.tsdb.retention.time=2d \
+            --web.listen-address=0.0.0.0:9090
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/prometheus.service
+        mode: '0644'
+      notify: restart prometheus
+      tags: [install, prometheus, config]
+
+    - name: Enable and start prometheus
+      systemd:
+        name: prometheus
+        enabled: true
+        state: started
+        daemon_reload: true
+      tags: [install, prometheus, service]
+
+    - name: Wait for prometheus to be ready
+      wait_for:
+        port: 9090
+        host: localhost
+        delay: 2
+        timeout: 30
+      tags: [install, prometheus, service]
+
+    # --- Promtail ---
+
+    - name: Install unzip
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+      tags: [install, promtail]
+
+    - name: Create promtail system user
+      user:
+        name: promtail
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+        groups:
+          - systemd-journal
+          - adm
+      tags: [install, promtail]
+
+    - name: Create promtail directories
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: '0750'
+      loop:
+        - { path: /etc/promtail, owner: root, group: promtail }
+        - { path: /var/lib/promtail, owner: promtail, group: promtail }
+      tags: [install, promtail]
+
+    - name: Check promtail version
+      command: /usr/local/bin/promtail --version
+      register: promtail_installed
+      changed_when: false
+      failed_when: false
+      tags: [install, promtail, upgrade]
+
+    - name: Download promtail
+      get_url:
+        url: "https://github.com/grafana/loki/releases/download/v{{ promtail_version }}/promtail-linux-amd64.zip"
+        dest: "/tmp/promtail-{{ promtail_version }}.zip"
+        mode: '0644'
+      when: promtail_installed.rc != 0 or promtail_version not in (promtail_installed.stdout | default(''))
+      tags: [install, promtail, upgrade]
+
+    - name: Extract promtail
+      unarchive:
+        src: "/tmp/promtail-{{ promtail_version }}.zip"
+        dest: /tmp
+        remote_src: true
+      when: promtail_installed.rc != 0 or promtail_version not in (promtail_installed.stdout | default(''))
+      tags: [install, promtail, upgrade]
+
+    - name: Install promtail binary
+      copy:
+        src: /tmp/promtail-linux-amd64
+        dest: /usr/local/bin/promtail
+        mode: '0755'
+        owner: root
+        group: root
+        remote_src: true
+      notify: restart promtail
+      when: promtail_installed.rc != 0 or promtail_version not in (promtail_installed.stdout | default(''))
+      tags: [install, promtail, upgrade]
+
+    - name: Deploy promtail configuration
+      template:
+        src: ../templates/promtail.yml.j2
+        dest: /etc/promtail/promtail.yml
+        owner: root
+        group: promtail
+        mode: '0640'
+      notify: restart promtail
+      tags: [install, promtail, config]
+
+    - name: Deploy promtail systemd unit
+      copy:
+        content: |
+          [Unit]
+          Description=Promtail Log Agent
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=promtail
+          Group=promtail
+          Type=simple
+          ExecStart=/usr/local/bin/promtail \
+            -config.file=/etc/promtail/promtail.yml
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/promtail.service
+        mode: '0644'
+      notify: restart promtail
+      tags: [install, promtail, config]
+
+    - name: Enable and start promtail
+      systemd:
+        name: promtail
+        enabled: true
+        state: started
+        daemon_reload: true
+      tags: [install, promtail, service]
+
+    # --- Status ---
+
+    - name: Check node_exporter service status
+      command: systemctl status node_exporter
+      register: node_exporter_status
+      changed_when: false
+      failed_when: false
+      tags: [status]
+
+    - name: Report node_exporter status
+      debug:
+        msg: "{{ node_exporter_status.stdout_lines }}"
+      tags: [status]
+
+    - name: Check prometheus service status
+      command: systemctl status prometheus
+      register: prometheus_status
+      changed_when: false
+      failed_when: false
+      tags: [status]
+
+    - name: Report prometheus status
+      debug:
+        msg: "{{ prometheus_status.stdout_lines }}"
+      tags: [status]
+
+    - name: Check promtail service status
+      command: systemctl status promtail
+      register: promtail_status
+      changed_when: false
+      failed_when: false
+      tags: [status]
+
+    - name: Report promtail status
+      debug:
+        msg: "{{ promtail_status.stdout_lines }}"
+      tags: [status]
