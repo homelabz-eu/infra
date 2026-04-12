@@ -24,3 +24,6 @@ secrets/**/*.plaintext.*
 node_modules
 proxmox/scripts/talos-configs/*
 tf_output.json
+
+# Go binaries
+/secret-manager/secret-manager
