@@ -1,3 +1,8 @@
+FROM golang:1.25 AS secret-manager-builder
+WORKDIR /build
+COPY secret-manager/ .
+RUN go build -o /secret-manager ./cmd/secret-manager
+
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -52,6 +57,8 @@ RUN curl -L "https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.
     && mv /tmp/age/age-keygen /usr/local/bin/age-keygen \
     && chmod +x /usr/local/bin/age /usr/local/bin/age-keygen \
     && rm -rf /tmp/age /tmp/age.tar.gz
+
+COPY --from=secret-manager-builder /secret-manager /usr/local/bin/secret-manager
 
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"

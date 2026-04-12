@@ -99,9 +99,8 @@ workspace:
 
 .PHONY: plan
 plan:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
-		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
-		python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Loading secrets...${NC}" && cd $(TOFU_DIR) && \
+		../secret-manager/secret-manager dump && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
@@ -128,9 +127,8 @@ plan:
 
 .PHONY: apply
 apply:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
-		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
-		python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Loading secrets...${NC}" && cd $(TOFU_DIR) && \
+		../secret-manager/secret-manager dump && cd ..
 	@TARGET_FLAG=""; \
 	if [ -n "$(TARGET)" ]; then \
 		TARGET_FLAG="-target=$(TARGET)"; \
@@ -300,6 +298,12 @@ build-kubeconfig-tool:
 	@chmod +x cicd-update-kubeconfig
 	@echo -e "${GREEN}Binary built: cicd-update-kubeconfig${NC}"
 
+.PHONY: build-secret-manager
+build-secret-manager:
+	@echo -e "${CYAN}Building secret-manager binary...${NC}"
+	@cd secret-manager && go build -o secret-manager ./cmd/secret-manager
+	@echo -e "${GREEN}Binary built: secret-manager/secret-manager${NC}"
+
 
 .PHONY: update-kubeconfigs
 update-kubeconfigs: build-kubeconfig-tool
@@ -363,9 +367,8 @@ ephemeral-plan:
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-plan WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
 	fi
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
-		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
-		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
+	@echo -e "${CYAN}Loading secrets...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
+		../../secret-manager/secret-manager dump --secrets-dir ../../secrets && cd ../..
 	@echo -e "${CYAN}Planning ephemeral infrastructure for $(WORKSPACE)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
 		tofu workspace select -or-create $(WORKSPACE)&& \
@@ -377,9 +380,8 @@ ephemeral-apply:
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-apply WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
 	fi
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
-		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
-		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
+	@echo -e "${CYAN}Loading secrets...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
+		../../secret-manager/secret-manager dump --secrets-dir ../../secrets && cd ../..
 	@if [ "$(MINIMAL)" = "true" ]; then \
 		echo -e "${CYAN}Applying MINIMAL ephemeral infrastructure for $(WORKSPACE) (2 phases)...${NC}"; \
 		KUBECONFIG_PATH=$${KUBECONFIG:-~/.kube/config}; \
