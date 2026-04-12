@@ -51,6 +51,8 @@ variable "workload" {
       "sonarr",
       "qbittorrent",
       "plex",
+      "flaresolverr",
+      "bazarr",
     ]
     prod = [
       "local-path-provisioner",
@@ -445,6 +447,9 @@ variable "config" {
       }
       plex = {
         ingress_host = "plex.homelabz.eu"
+      }
+      bazarr = {
+        ingress_host = "bazarr.homelabz.eu"
       }
     }
     prod = {
